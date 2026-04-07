@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MedVault">
+<meta name="theme-color" content="#f0ece6">
+<meta name="description" content="Track family medicines, doses, and inventory. Never miss a dose or run out of stock.">
+
+<title>MedVault – Family Medicine Tracker</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- App Styles -->
+<style>
+
+:root{
+  --bg:#f0ece6;--surface:#faf8f5;--surface2:#f3efe9;--surface3:#ede8e1;
+  --border:#ddd8cf;--border2:#ccc6bc;
+  --text:#1c1917;--text2:#6b6560;--text3:#a09b95;
+  --accent:#c8622a;--accent-light:#e8845a;--accent-bg:#fdf0e8;
+  --green:#2d7d52;--green-light:#45a876;--green-bg:#eaf5ef;
+  --red:#b83232;--red-bg:#fdf1f1;
+  --blue:#2f62aa;--blue-bg:#eef3fb;
+  --amber:#a06010;--amber-bg:#fdf5e8;
+  --purple:#6644aa;
+  --shadow-xs:0 1px 3px rgba(28,25,23,0.06);
+  --shadow-sm:0 2px 8px rgba(28,25,23,0.08);
+  --shadow-md:0 4px 18px rgba(28,25,23,0.10);
+  --shadow-lg:0 8px 32px rgba(28,25,23,0.12);
+  --shadow-xl:0 16px 48px rgba(28,25,23,0.14);
+  --r-sm:10px;--r-md:14px;--r-lg:20px;--r-xl:24px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;height:100%;}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+  padding-bottom:var(--safe-bot);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 5% 0%,rgba(200,98,42,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 95% 100%,rgba(45,125,82,0.06) 0%,transparent 60%);
+}
+
+/* ─── HEADER ─── */
+header{
+  position:sticky;top:0;z-index:200;
+  padding-top:calc(var(--safe-top) + 10px);
+  padding-bottom:10px;padding-left:16px;padding-right:16px;
+  background:rgba(240,236,230,0.92);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px;flex:1;}
+.logo-mark{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(145deg,#d4723e,#b84f20);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 12px rgba(200,98,42,0.32),inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.logo-wordmark{font-family:'Instrument Serif',serif;font-size:20px;letter-spacing:-0.3px;}
+.logo-wordmark em{color:var(--accent);font-style:normal;}
+.hdr-actions{display:flex;gap:8px;align-items:center;}
+.icon-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.18s;position:relative;color:var(--text2);
+  -webkit-tap-highlight-color:transparent;
+}
+.icon-btn:active{background:var(--accent);border-color:var(--accent);color:white;transform:scale(0.94);}
+.notif-badge{
+  position:absolute;top:-3px;right:-3px;
+  min-width:16px;height:16px;border-radius:8px;
+  background:var(--red);color:white;font-size:9px;font-weight:800;
+  display:none;align-items:center;justify-content:center;
+  padding:0 4px;border:2px solid var(--bg);
+}
+
+/* ─── LAYOUT ─── */
+.app{display:flex;min-height:calc(100dvh - 62px);position:relative;z-index:1;}
+
+/* ─── SIDEBAR (desktop) ─── */
+.sidebar{
+  width:248px;flex-shrink:0;
+  background:rgba(250,248,245,0.78);border-right:1px solid var(--border);
+  padding:20px 12px;display:flex;flex-direction:column;gap:2px;
+  backdrop-filter:blur(8px);
+}
+.sb-label{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3);padding:0 12px 8px;display:block;margin-top:18px;}
+.sb-label:first-child{margin-top:0;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:var(--r-sm);
+  cursor:pointer;transition:all 0.15s;
+  font-size:13.5px;font-weight:500;color:var(--text2);user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.ni-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--surface3);transition:all 0.15s;flex-shrink:0;}
+.nav-item:hover,.nav-item:active{background:var(--surface);color:var(--text);}
+.nav-item.active{background:var(--accent-bg);color:var(--accent);}
+.nav-item.active .ni-ico{background:var(--accent);}
+.nav-item.active .ni-ico svg{stroke:white;}
+.nav-item.sos.active{background:var(--red-bg);color:var(--red);}
+.nav-item.sos.active .ni-ico{background:var(--red);}
+.pnav{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all 0.15s;font-size:13.5px;font-weight:500;color:var(--text2);-webkit-tap-highlight-color:transparent;}
+.pnav:hover,.pnav:active{background:var(--surface);color:var(--text);}
+.pnav.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
+.pav-xs{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:var(--surface3);display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--border);}
+.pav-xs img{width:100%;height:100%;object-fit:cover;}
+.add-member{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all 0.15s;font-size:13px;font-weight:600;color:var(--text3);border:1.5px dashed var(--border2);margin-top:5px;-webkit-tap-highlight-color:transparent;}
+.add-member:hover,.add-member:active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+
+/* ─── BOTTOM NAV (mobile) ─── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  z-index:200;
+  background:rgba(240,236,230,0.95);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  padding:8px 0 calc(8px + var(--safe-bot));
+  flex-direction:row;
+  box-shadow:0 -4px 20px rgba(28,25,23,0.08);
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;cursor:pointer;padding:4px 8px;
+  font-size:10px;font-weight:700;color:var(--text3);
+  -webkit-tap-highlight-color:transparent;transition:all 0.15s;
+  text-transform:uppercase;letter-spacing:0.4px;
+}
+.bn-item.active{color:var(--accent);}
+.bn-item.sos-bn.active{color:var(--red);}
+.bn-ico{
+  width:32px;height:32px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.bn-item.active .bn-ico{background:var(--accent-bg);}
+.bn-item.sos-bn.active .bn-ico{background:var(--red-bg);}
+.bn-profiles-scroll{
+  flex:2;display:flex;align-items:center;overflow-x:auto;gap:12px;
+  padding:0 12px;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.bn-profiles-scroll::-webkit-scrollbar{display:none;}
+.bn-profile-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.bn-pav{
+  width:30px;height:30px;border-radius:50%;overflow:hidden;
+  border:2px solid var(--border);background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.bn-pav img{width:100%;height:100%;object-fit:cover;}
+.bn-profile-btn.active .bn-pav{border-color:var(--accent);box-shadow:0 0 0 2px rgba(200,98,42,0.2);}
+.bn-pname{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;max-width:36px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bn-profile-btn.active .bn-pname{color:var(--accent);}
+
+/* ─── MAIN ─── */
+.main{flex:1;padding:24px 20px;overflow-y:auto;min-width:0;}
+
+/* ─── PAGE TITLES ─── */
+.sec-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
+.sec-title{font-family:'Instrument Serif',serif;font-size:26px;line-height:1.2;}
+.sec-sub{font-size:12.5px;color:var(--text3);margin-top:3px;}
+
+/* ─── BUTTONS ─── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 18px;border-radius:50px;border:none;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all 0.18s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-primary{background:linear-gradient(145deg,#d4723e,#b84f20);color:white;box-shadow:0 4px 14px rgba(200,98,42,0.28),inset 0 1px 0 rgba(255,255,255,0.15);}
+.btn-primary:active{transform:scale(0.97);}
+.btn-ghost{background:var(--surface);color:var(--text2);border:1px solid var(--border);box-shadow:var(--shadow-xs);}
+.btn-ghost:active{background:var(--surface2);}
+.btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(45,125,82,0.2);}
+.btn-green:active{background:var(--green);color:white;}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(184,50,50,0.15);}
+.btn-danger:active{background:var(--red);color:white;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+
+/* ─── ALERTS ─── */
+.alert-strip{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--r-sm);margin-bottom:10px;font-size:13px;font-weight:500;border:1px solid rgba(184,50,50,0.2);background:var(--red-bg);color:var(--red);}
+
+/* ─── PROFILE GRID ─── */
+.profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;}
+.pcard{
+  background:var(--surface);border-radius:var(--r-lg);
+  border:1px solid var(--border);padding:22px 16px 16px;
+  text-align:center;cursor:pointer;transition:all 0.22s;
+  box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+.pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pc1,var(--accent)),var(--pc2,var(--accent-light)));}
+.pcard:active{transform:scale(0.97);}
+.pav-lg{
+  width:64px;height:64px;border-radius:50%;margin:0 auto 12px;
+  background:var(--surface2);border:2.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;cursor:pointer;box-shadow:var(--shadow-xs);
+}
+.pav-lg img{width:100%;height:100%;object-fit:cover;}
+.pav-ov{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;border-radius:50%;}
+.pav-lg:hover .pav-ov{display:flex;}
+.p-name{font-weight:700;font-size:14px;margin-bottom:2px;}
+.p-role{font-size:11px;color:var(--text3);margin-bottom:10px;}
+.p-stats{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;}
+.schip{border-radius:50px;padding:3px 9px;font-size:10.5px;font-weight:700;background:var(--surface2);border:1px solid var(--border);color:var(--text2);}
+.schip.w{background:var(--red-bg);color:var(--red);border-color:rgba(184,50,50,0.2);}
+.add-pcard{
+  background:var(--surface);border-radius:var(--r-lg);
+  border:1.5px dashed var(--border2);padding:22px 16px 16px;
+  text-align:center;cursor:pointer;transition:all 0.22s;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;min-height:172px;color:var(--text3);
+  -webkit-tap-highlight-color:transparent;
+}
+.add-pcard:active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+.add-ring{width:48px;height:48px;border-radius:50%;border:2px dashed currentColor;display:flex;align-items:center;justify-content:center;}
+
+/* ─── MEDICINE CARDS ─── */
+.med-list{display:flex;flex-direction:column;gap:10px;}
+.mcard{
+  background:var(--surface);border-radius:var(--r-lg);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-sm);transition:all 0.2s;
+  overflow:hidden;
+}
+.mcard.low{border-left:3px solid var(--red);}
+.mcard-top{display:flex;align-items:center;gap:14px;padding:14px 16px;}
+.mthumb{
+  width:50px;height:50px;border-radius:var(--r-sm);flex-shrink:0;
+  background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;cursor:pointer;
+}
+.mthumb img{width:100%;height:100%;object-fit:cover;}
+.thumb-ov{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;border-radius:var(--r-sm);}
+.mthumb:hover .thumb-ov{display:flex;}
+.minfo{flex:1;min-width:0;}
+.mname{font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mdesc{font-size:11.5px;color:var(--text3);margin-bottom:0;}
+.mcnt-col{text-align:right;flex-shrink:0;min-width:80px;}
+.cnt-big{font-family:'Instrument Serif',serif;font-size:30px;line-height:1;}
+.cnt-big.w{color:var(--red);}
+.cnt-unit{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:0.3px;text-transform:uppercase;margin-bottom:6px;}
+.cnt-row{display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+.cb{width:24px;height:24px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.14s;color:var(--text2);font-weight:700;font-size:15px;-webkit-tap-highlight-color:transparent;}
+.cb:active{background:var(--accent);border-color:var(--accent);color:white;}
+.ci{width:38px;text-align:center;border:1px solid var(--border);border-radius:7px;padding:2px 3px;font-size:12px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;background:var(--surface2);color:var(--text);outline:none;}
+
+/* ─── DOSE SCHEDULE ROW ─── */
+.dose-section{border-top:1px solid var(--border);padding:10px 16px 12px;}
+.dose-label{font-size:10px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.dose-pills{display:flex;flex-wrap:wrap;gap:6px;}
+.dpill{
+  display:inline-flex;align-items:center;gap:5px;
+  border-radius:50px;padding:5px 12px 5px 8px;font-size:12px;font-weight:600;
+  border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);
+  cursor:pointer;transition:all 0.18s;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;overflow:hidden;
+}
+.dpill::before{content:'';position:absolute;inset:0;background:rgba(45,125,82,0);transition:background 0.18s;}
+.dpill.taken{background:var(--green-bg);color:var(--green);border-color:rgba(45,125,82,0.25);}
+.dpill.taken::before{background:rgba(45,125,82,0.04);}
+.dpill.missed{background:var(--red-bg);color:var(--red);border-color:rgba(184,50,50,0.2);}
+.dpill:active{transform:scale(0.95);}
+.dpill-ico{width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.18s;}
+.dpill.taken .dpill-ico{background:var(--green);border-color:var(--green);}
+.dpill.taken .dpill-ico svg{stroke:white;}
+
+/* ─── MEDICINE ACTION ROW ─── */
+.mcard-actions{display:flex;gap:6px;padding:0 16px 12px;flex-wrap:wrap;}
+
+/* ─── SOS HERO ─── */
+.sos-hero{border-radius:var(--r-xl);padding:18px 20px;background:linear-gradient(135deg,#b83232,#8a1f1f);color:white;display:flex;align-items:center;gap:14px;margin-bottom:20px;box-shadow:0 8px 28px rgba(184,50,50,0.26),inset 0 1px 0 rgba(255,255,255,0.1);position:relative;overflow:hidden;}
+.sos-hero::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05);}
+.sos-hero-ico{width:48px;height:48px;border-radius:13px;flex-shrink:0;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;}
+.sos-hero-title{font-family:'Instrument Serif',serif;font-size:18px;margin-bottom:2px;}
+.sos-hero-desc{font-size:12px;opacity:0.78;}
+
+/* ─── NOTIF PANEL ─── */
+.npanel{position:fixed;top:70px;right:14px;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-xl);z-index:300;display:none;overflow:hidden;max-height:72vh;overflow-y:auto;}
+.npanel.open{display:block;animation:np 0.2s ease;}
+@keyframes np{from{opacity:0;transform:translateY(-6px) scale(0.97);}to{opacity:1;transform:none;}}
+.nhead{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;background:var(--surface2);}
+.nitem{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+.nitem:last-child{border-bottom:none;}
+.ndot{width:7px;height:7px;border-radius:50%;background:var(--red);margin-top:5px;flex-shrink:0;}
+.nmsg{font-size:12.5px;line-height:1.5;}
+.ntime{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* ─── MODALS ─── */
+.moverlay{position:fixed;inset:0;z-index:400;background:rgba(28,25,23,0.45);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;padding:0;}
+.moverlay.open{display:flex;animation:mo 0.2s ease;}
+@keyframes mo{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:var(--surface);
+  width:100%;max-width:520px;
+  max-height:92dvh;overflow-y:auto;
+  box-shadow:var(--shadow-xl);border:1px solid var(--border);
+  animation:mslide 0.28s cubic-bezier(0.34,1.4,0.64,1);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding-bottom:var(--safe-bot);
+}
+@media(min-width:600px){
+  .moverlay{align-items:center;padding:20px;}
+  .modal{border-radius:var(--r-xl);max-height:90dvh;}
+  @keyframes mslide{from{opacity:0;transform:scale(0.94) translateY(8px);}to{opacity:1;transform:none;}}
+}
+@keyframes mslide{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:none;}}
+.mhead{padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--r-xl) var(--r-xl) 0 0;}
+.mtitle{font-family:'Instrument Serif',serif;font-size:18px;}
+.mclose{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.14s;color:var(--text3);-webkit-tap-highlight-color:transparent;}
+.mclose:active{background:var(--surface3);color:var(--text);}
+.mbody{padding:20px;}
+.mfoot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--surface2);}
+
+/* ─── FORMS ─── */
+.fg{margin-bottom:14px;}
+.fl{display:block;font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.fi,.fs{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:0.17s;-webkit-appearance:none;}
+.fi:focus,.fs:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(200,98,42,0.1);}
+.fi::placeholder{color:var(--text3);}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.chip{padding:5px 12px;border-radius:50px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.14s;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);user-select:none;-webkit-tap-highlight-color:transparent;}
+.chip.on{background:var(--accent);color:white;border-color:var(--accent);box-shadow:0 2px 8px rgba(200,98,42,0.22);}
+
+/* ─── AVATAR ─── */
+.av-wrap{text-align:center;margin-bottom:18px;}
+.av-ring{width:80px;height:80px;border-radius:50%;margin:0 auto 7px;background:var(--surface2);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color 0.2s;}
+.av-ring img{width:100%;height:100%;object-fit:cover;}
+.av-ov{position:absolute;inset:0;background:rgba(0,0,0,0.42);display:none;align-items:center;justify-content:center;border-radius:50%;}
+.av-ring:hover .av-ov,.av-ring:active .av-ov{display:flex;}
+.av-hint{font-size:11px;color:var(--text3);}
+
+/* ─── SWATCHES ─── */
+.swatches{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.sw{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.14s;box-shadow:var(--shadow-xs);}
+.sw.on{box-shadow:0 0 0 2px white,0 0 0 4px var(--accent);}
+
+/* ─── STRIP PREVIEW ─── */
+.sp{border-radius:var(--r-sm);padding:11px 14px;font-size:13px;font-weight:600;text-align:center;border:1px solid var(--border);background:var(--surface2);color:var(--text2);transition:all 0.2s;margin-top:6px;}
+.sp.ready{background:var(--green-bg);color:var(--green);border-color:rgba(45,125,82,0.22);}
+
+/* ─── EMPTY ─── */
+.empty{text-align:center;padding:44px 20px;}
+.empty-ico{width:68px;height:68px;border-radius:18px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.empty h3{font-size:15px;font-weight:700;margin-bottom:4px;}
+.empty p{font-size:12.5px;color:var(--text3);}
+
+/* ─── INSTALL BANNER ─── */
+.install-banner{
+  display:none;
+  background:linear-gradient(135deg,var(--accent),#b84f20);
+  color:white;padding:10px 16px;
+  align-items:center;gap:10px;font-size:13px;font-weight:600;
+  border-bottom:1px solid rgba(255,255,255,0.15);
+  position:relative;z-index:199;
+}
+.install-banner.show{display:flex;}
+.install-banner button{margin-left:auto;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:50px;padding:5px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+.install-banner .dismiss{background:transparent;border:none;font-size:18px;padding:0 4px;opacity:0.7;flex-shrink:0;}
+
+/* ─── CONFIRM DIALOG ─── */
+.confirm-overlay{position:fixed;inset:0;z-index:500;background:rgba(28,25,23,0.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;}
+.confirm-overlay.open{display:flex;animation:mo 0.15s ease;}
+.confirm-box{background:var(--surface);border-radius:var(--r-xl);padding:24px;max-width:320px;width:100%;box-shadow:var(--shadow-xl);border:1px solid var(--border);text-align:center;animation:mi 0.2s ease;}
+@keyframes mi{from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:none;}}
+.confirm-icon{width:56px;height:56px;border-radius:50%;background:var(--red-bg);border:1px solid rgba(184,50,50,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.confirm-title{font-family:'Instrument Serif',serif;font-size:18px;margin-bottom:6px;}
+.confirm-msg{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:20px;}
+.confirm-btns{display:flex;gap:8px;}
+.confirm-btns .btn{flex:1;justify-content:center;}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:calc(80px + var(--safe-bot));left:50%;transform:translateX(-50%);padding:11px 18px;border-radius:50px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);z-index:600;display:none;align-items:center;gap:8px;background:var(--text);color:white;opacity:0;white-space:nowrap;}
+.toast.show{display:flex;animation:ta 2.9s ease forwards;}
+@keyframes ta{0%{opacity:0;transform:translateX(-50%) translateY(8px);}12%{opacity:1;transform:translateX(-50%) translateY(0);}80%{opacity:1;}100%{opacity:0;transform:translateX(-50%) translateY(-4px);}}
+@media(min-width:780px){.toast{bottom:26px;}}
+
+/* ─── MISC ─── */
+.hidden{display:none!important;}
+.page{display:none;}
+.page.active{display:block;}
+.c1{--pc1:#d4723e;--pc2:#f0a070;}
+.c2{--pc1:#2f62aa;--pc2:#5d90d4;}
+.c3{--pc1:#2d7d52;--pc2:#55a878;}
+.c4{--pc1:#6644aa;--pc2:#9470d0;}
+.c5{--pc1:#a06010;--pc2:#d08838;}
+.c6{--pc1:#b83232;--pc2:#d86060;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:779px){
+  .sidebar{display:none!important;}
+  .main{padding:18px 14px;padding-bottom:calc(90px + var(--safe-bot));}
+  .bottom-nav{display:flex;}
+  .profiles-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));}
+}
+@media(min-width:780px){
+  .bottom-nav{display:none!important;}
+  .icon-btn:hover{background:var(--accent);border-color:var(--accent);color:white;}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,98,42,0.38);}
+}
+
+/* ─── REPEAT BADGE ─── */
+.repeat-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:700;color:var(--text3);
+  margin-top:5px;
+}
+.repeat-badge svg{flex-shrink:0;opacity:0.7;}
+.repeat-badge-off{color:var(--text3);opacity:0.6;}
+
+/* ─── NOT DUE TODAY ─── */
+.dose-label.not-due{
+  color:var(--text3);font-style:italic;font-weight:500;
+}
+
+/* ─── REPEAT TYPE CHIPS ─── */
+.rtype-chip{font-size:11.5px;padding:4px 11px;}
+
+</style>
+</head>
+<body>
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13m0 0-4-4m4 4 4-4M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+  <span>Add MedVault to your home screen</span>
+  <button onclick="installPWA()">Install</button>
+  <button class="dismiss" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+    </div>
+    <div class="logo-wordmark">Med<em>Vault</em></div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" onclick="toggleNotif()" id="notif-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <div class="notif-badge" id="nbadge"></div>
+    </button>
+  </div>
+</header>
+
+<!-- NOTIF PANEL -->
+<div class="npanel" id="npanel">
+  <div class="nhead">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    Alerts &amp; Reminders
+  </div>
+  <div id="nlist"></div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR (desktop) -->
+  <div class="sidebar">
+    <span class="sb-label">Menu</span>
+    <div class="nav-item active" onclick="showPage('home')" data-page="home">
+      <div class="ni-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      Dashboard
+    </div>
+    <div class="nav-item sos" onclick="showPage('sos')" data-page="sos">
+      <div class="ni-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      SOS Medicines
+    </div>
+    <span class="sb-label">Family</span>
+    <div id="sb-profiles"></div>
+    <div class="add-member" onclick="openAddProfile()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add Member
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="sec-head">
+        <div><div class="sec-title">Family Overview</div><div class="sec-sub" id="home-date"></div></div>
+        <button class="btn btn-primary" onclick="openAddProfile()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Member
+        </button>
+      </div>
+      <div id="home-alerts"></div>
+      <div class="profiles-grid" id="pgrid"></div>
+    </div>
+
+    <!-- SOS -->
+    <div class="page" id="page-sos">
+      <div class="sec-head">
+        <div><div class="sec-title">SOS Medicines</div><div class="sec-sub">Emergency &amp; critical medicines</div></div>
+        <button class="btn btn-primary" onclick="openAddMed('sos')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add SOS
+        </button>
+      </div>
+      <div class="sos-hero">
+        <div class="sos-hero-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div><div class="sos-hero-title">Emergency Cabinet</div><div class="sos-hero-desc">Alerts fire when stock drops to 4 or below.</div></div>
+      </div>
+      <div id="sos-alerts"></div>
+      <div class="med-list" id="sos-list"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile"><div id="pcontent"></div></div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="bn-item active" onclick="showPage('home')" data-bn="home">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    Home
+  </div>
+  <div class="bn-profiles-scroll" id="bn-profiles"></div>
+  <div class="bn-item sos-bn" onclick="showPage('sos')" data-bn="sos">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    SOS
+  </div>
+  <div class="bn-item" onclick="openAddProfile()" style="flex:0.8;">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+    Add
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="moverlay" id="modal-profile">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle" id="pm-title">Add Family Member</div>
+      <div class="mclose" onclick="closeModal('modal-profile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div class="av-wrap">
+        <div class="av-ring" onclick="document.getElementById('p-img-up').click()">
+          <div id="pav-prev" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
+          <div class="av-ov"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        </div>
+        <input type="file" id="p-img-up" accept="image/*" class="hidden" onchange="previewPImg(event)">
+        <div class="av-hint">Tap to upload photo</div>
+      </div>
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="p-name" placeholder="e.g. Dad, Mum, Aarav…"/></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Role</label><input class="fi" id="p-role" placeholder="e.g. Dad, Child…"/></div>
+        <div class="fg"><label class="fl">Age</label><input class="fi" id="p-age" type="number" placeholder="Age"/></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Colour Theme</label>
+        <div class="swatches" id="swatches">
+          <div class="sw" style="background:linear-gradient(135deg,#d4723e,#f0a070)" data-c="1" onclick="pickColor(1)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#2f62aa,#5d90d4)" data-c="2" onclick="pickColor(2)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#2d7d52,#55a878)" data-c="3" onclick="pickColor(3)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#6644aa,#9470d0)" data-c="4" onclick="pickColor(4)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#a06010,#d08838)" data-c="5" onclick="pickColor(5)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#b83232,#d86060)" data-c="6" onclick="pickColor(6)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-profile')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEDICINE MODAL -->
+<div class="moverlay" id="modal-medicine">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle" id="mm-title">Add Medicine</div>
+      <div class="mclose" onclick="closeModal('modal-medicine')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div class="mthumb" style="width:64px;height:64px;margin:0 auto;border-radius:14px;cursor:pointer;" onclick="document.getElementById('m-img-up').click()">
+          <div id="m-img-prev" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:10px;"></div>
+          <div class="thumb-ov"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        </div>
+        <input type="file" id="m-img-up" accept="image/*" class="hidden" onchange="previewMImg(event)">
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Tap to upload photo</div>
+      </div>
+      <div class="fg"><label class="fl">Medicine Name</label><input class="fi" id="m-name" placeholder="e.g. Paracetamol 500mg"/></div>
+      <div class="fg"><label class="fl">Description / Notes</label><input class="fi" id="m-desc" placeholder="e.g. For fever, after food…"/></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Current Count</label><input class="fi" id="m-count" type="number" placeholder="e.g. 30" min="0"/></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select class="fs" id="m-type">
+            <option value="tablet">Tablet</option>
+            <option value="capsule">Capsule</option>
+            <option value="syrup">Syrup (ml)</option>
+            <option value="injection">Injection</option>
+            <option value="drops">Drops</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Strip Size <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text3);">— per strip you buy</span></label>
+        <div class="chip-row" id="strip-presets">
+          <div class="chip" data-s="10" onclick="pickStrip(this,10)">10</div>
+          <div class="chip" data-s="14" onclick="pickStrip(this,14)">14</div>
+          <div class="chip" data-s="15" onclick="pickStrip(this,15)">15</div>
+          <div class="chip" data-s="20" onclick="pickStrip(this,20)">20</div>
+          <div class="chip" data-s="30" onclick="pickStrip(this,30)">30</div>
+          <div class="chip" data-s="60" onclick="pickStrip(this,60)">60</div>
+        </div>
+        <input class="fi" type="number" id="m-strip" placeholder="Or custom…" min="1" style="margin-top:8px;" oninput="syncStripChip(this.value)"/>
+      </div>
+      <div class="fg" id="sched-grp">
+
+        <!-- REPEAT TYPE -->
+        <label class="fl">Repeat</label>
+        <div class="chip-row" style="margin-bottom:0;">
+          <div class="chip rtype-chip on" data-rt="daily" onclick="setRepeatType('daily')">Every Day</div>
+          <div class="chip rtype-chip" data-rt="weekdays" onclick="setRepeatType('weekdays')">Specific Days</div>
+          <div class="chip rtype-chip" data-rt="weekly" onclick="setRepeatType('weekly')">Weekly</div>
+          <div class="chip rtype-chip" data-rt="every_n_days" onclick="setRepeatType('every_n_days')">Every N Days</div>
+          <div class="chip rtype-chip" data-rt="as_needed" onclick="setRepeatType('as_needed')">As Needed</div>
+        </div>
+
+        <!-- DAY PICKER (weekdays + weekly) -->
+        <div id="rp-days" style="display:none;margin-top:10px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:7px;" id="rp-days-hint">Select days</div>
+          <div class="chip-row">
+            <div class="chip rday-chip" data-d="0" onclick="toggleRepeatDay(this)">Sun</div>
+            <div class="chip rday-chip" data-d="1" onclick="toggleRepeatDay(this)">Mon</div>
+            <div class="chip rday-chip" data-d="2" onclick="toggleRepeatDay(this)">Tue</div>
+            <div class="chip rday-chip" data-d="3" onclick="toggleRepeatDay(this)">Wed</div>
+            <div class="chip rday-chip" data-d="4" onclick="toggleRepeatDay(this)">Thu</div>
+            <div class="chip rday-chip" data-d="5" onclick="toggleRepeatDay(this)">Fri</div>
+            <div class="chip rday-chip" data-d="6" onclick="toggleRepeatDay(this)">Sat</div>
+          </div>
+        </div>
+
+        <!-- EVERY N DAYS -->
+        <div id="rp-every" style="display:none;margin-top:10px;">
+          <div class="f2" style="gap:10px;">
+            <div class="fg" style="margin-bottom:0;">
+              <label class="fl">Every</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input class="fi" type="number" id="r-every-n" value="2" min="2" max="90" style="width:72px;text-align:center;font-weight:700;" oninput="updateRepeatEvery()"/>
+                <span style="font-size:13px;color:var(--text2);font-weight:500;">days</span>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label class="fl">Starting</label>
+              <input class="fi" type="date" id="r-start-date" oninput="updateRepeatEvery()"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPEAT PREVIEW -->
+        <div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;color:var(--text2);display:flex;align-items:center;gap:7px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span id="repeat-preview">Every day</span>
+        </div>
+
+        <!-- DOSE TIMES -->
+        <label class="fl" style="margin-top:14px;">Dose Times</label>
+        <div class="chip-row" id="time-chips">
+          <div class="chip" data-t="06:00" onclick="toggleTime(this)">6 AM</div>
+          <div class="chip" data-t="08:00" onclick="toggleTime(this)">8 AM</div>
+          <div class="chip" data-t="12:00" onclick="toggleTime(this)">12 PM</div>
+          <div class="chip" data-t="15:00" onclick="toggleTime(this)">3 PM</div>
+          <div class="chip" data-t="18:00" onclick="toggleTime(this)">6 PM</div>
+          <div class="chip" data-t="21:00" onclick="toggleTime(this)">9 PM</div>
+          <div class="chip" data-t="22:00" onclick="toggleTime(this)">10 PM</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:9px;align-items:center;">
+          <input class="fi" type="time" id="custom-t" style="flex:1;"/>
+          <button class="btn btn-ghost btn-sm" onclick="addCustomTime()">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-medicine')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMed()">Save Medicine</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUY STRIP MODAL -->
+<div class="moverlay" id="modal-strip">
+  <div class="modal" style="max-width:400px;">
+    <div class="mhead">
+      <div class="mtitle">Buy a Strip</div>
+      <div class="mclose" onclick="closeModal('modal-strip')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px;background:var(--surface2);border-radius:var(--r-md);border:1px solid var(--border);">
+        <div id="bs-img" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:var(--surface3);border-radius:9px;overflow:hidden;flex-shrink:0;border:1px solid var(--border);"></div>
+        <div><div id="bs-name" style="font-weight:700;font-size:14px;"></div><div id="bs-stock" style="font-size:12px;color:var(--text3);margin-top:2px;"></div></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Strips Bought</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+          <div class="cb" style="width:36px;height:36px;" onclick="chgQty(-1)">−</div>
+          <input class="fi" type="number" id="bs-qty" value="1" min="1" style="text-align:center;font-size:18px;font-weight:800;max-width:70px;padding:8px 4px;"/>
+          <div class="cb" style="width:36px;height:36px;" onclick="chgQty(1)">+</div>
+          <span style="font-size:13px;color:var(--text2);font-weight:500;">strip(s)</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Tablets per strip</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="fi" type="number" id="bs-size" min="1" style="font-size:15px;font-weight:700;max-width:110px;"/>
+          <span style="font-size:12px;color:var(--text3);">per strip</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Pre-filled from saved size. Edit if this strip differs.</div>
+      </div>
+      <div class="sp" id="bs-prev">Enter strip size to preview</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-strip')">Cancel</button>
+      <button class="btn btn-primary" style="background:linear-gradient(145deg,#3d9e6e,#2a7a52);box-shadow:0 4px 14px rgba(45,125,82,0.28);" onclick="confirmStrip()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Add to Inventory
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+    <div class="confirm-title" id="confirm-title">Delete Profile?</div>
+    <div class="confirm-msg" id="confirm-msg">This will permanently remove the profile and all their medicines.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" onclick="doConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="t-msg"></span></div>
+<!-- App Script -->
+<script>
+
+// ─── ICONS ───
+const I={
+  pill:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>`,
+  capsule:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/></svg>`,
+  syrup:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="16" y2="2"/><path d="M7 4v16a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4z"/><path d="M7 9h10"/></svg>`,
+  drops:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>`,
+  injection:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>`,
+  other:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="12" y2="18"/></svg>`,
+  cam:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`,
+  edit:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>`,
+  trash:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  cart:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>`,
+  warn:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  chk:`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  clk:`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  person:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--border2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  repeat:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
+};
+function mIco(t){return I[t]||I.pill;}
+
+// ─── REPEAT SCHEDULE HELPERS ───
+// repeat object shape:
+// { type: 'daily' | 'weekdays' | 'weekly' | 'every_n_days' | 'as_needed',
+//   days: [0,1,2,3,4,5,6],   // for 'weekdays' / 'weekly' (0=Sun)
+//   every: 2,                  // for 'every_n_days'
+//   startDate: 'YYYY-MM-DD'   // for 'every_n_days' anchor
+// }
+
+function isDueToday(m) {
+  const repeat = m.repeat || { type: 'daily' };
+  const now = new Date();
+  const dow = now.getDay(); // 0=Sun
+  const dk = todayStr();
+
+  switch (repeat.type) {
+    case 'daily':
+      return true;
+    case 'weekdays':
+      // specific days chosen by user (stored in repeat.days array)
+      return (repeat.days || []).includes(dow);
+    case 'weekly':
+      // one specific day
+      return (repeat.days || [])[0] === dow;
+    case 'every_n_days': {
+      const n = repeat.every || 1;
+      const anchor = repeat.startDate || dk;
+      const anchorDate = new Date(anchor + 'T00:00:00');
+      const todayDate = new Date(dk + 'T00:00:00');
+      const diff = Math.round((todayDate - anchorDate) / 86400000);
+      return diff >= 0 && diff % n === 0;
+    }
+    case 'as_needed':
+      return false; // never auto-deduct; show doses but no auto
+    default:
+      return true;
+  }
+}
+
+function repeatLabel(m) {
+  const r = m.repeat || { type: 'daily' };
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  switch (r.type) {
+    case 'daily': return 'Every day';
+    case 'weekdays':
+      if (!r.days || !r.days.length) return 'No days selected';
+      if (JSON.stringify(r.days.slice().sort()) === JSON.stringify([1,2,3,4,5])) return 'Weekdays';
+      if (JSON.stringify(r.days.slice().sort()) === JSON.stringify([0,6])) return 'Weekends';
+      return r.days.map(d=>DAY_NAMES[d]).join(', ');
+    case 'weekly':
+      return `Every ${DAY_NAMES[(r.days||[])[0]??0]}`;
+    case 'every_n_days':
+      return `Every ${r.every||2} days`;
+    case 'as_needed': return 'As needed';
+    default: return 'Every day';
+  }
+}
+
+// ─── STATE ───
+let S={
+  profiles:[],sosMeds:[],
+  editPId:null,editMId:null,target:null,
+  color:1,pImg:null,mImg:null,
+  times:[],       // selected schedule times
+  repeat:{ type:'daily', days:[], every:2, startDate:'' },
+  bsCtx:null,confirmCb:null,
+};
+let deferredInstall=null;
+
+function load(){
+  try{const d=localStorage.getItem('mv5');if(d){const p=JSON.parse(d);S.profiles=p.profiles||[];S.sosMeds=p.sosMeds||[];}}catch(e){}
+  // Migrate old mv4 data if mv5 doesn't exist yet
+  try{
+    if(!localStorage.getItem('mv5') && localStorage.getItem('mv4')){
+      const old=JSON.parse(localStorage.getItem('mv4'));
+      S.profiles=old.profiles||[];S.sosMeds=old.sosMeds||[];
+      save(); // save under new key
+    }
+  }catch(e){}
+}
+function save(){
+  try{localStorage.setItem('mv5',JSON.stringify({profiles:S.profiles,sosMeds:S.sosMeds}));}catch(e){}
+}
+
+// ─── DATE HELPERS ───
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function doseKey(mid,time){return `done_${mid}_${todayStr()}_${time}`;}
+function isDone(mid,time){return !!localStorage.getItem(doseKey(mid,time));}
+function markDone(mid,time){localStorage.setItem(doseKey(mid,time),'1');}
+function markUndone(mid,time){localStorage.removeItem(doseKey(mid,time));}
+
+// ─── INIT ───
+function init(){
+  load();
+  document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  renderAll();autoDecrement();calcAlerts();
+  setInterval(autoDecrement,60000);setInterval(calcAlerts,60000);
+  setupPWA();
+  // Init repeat UI defaults
+  syncRepeatUI();
+}
+
+// ─── RENDER ───
+function renderAll(){renderHome();renderSB();renderBN();renderSOS();calcAlerts();}
+
+function renderHome(){
+  let ha='',html='';
+  S.profiles.forEach(p=>{
+    const low=(p.medicines||[]).filter(m=>m.count<=4&&m.count>0);
+    const zero=(p.medicines||[]).filter(m=>m.count===0);
+    if(low.length)ha+=`<div class="alert-strip">${I.warn}<strong>${p.name}</strong> — ${low.map(m=>`${m.name}: ${m.count} left`).join(', ')}</div>`;
+    if(zero.length)ha+=`<div class="alert-strip">${I.warn}<strong>${p.name}</strong> — ${zero.map(m=>m.name).join(', ')} out of stock</div>`;
+    const av=p.img?`<img src="${p.img}" alt="">`:`<div style="opacity:0.6">${I.person}</div>`;
+    html+=`<div class="pcard c${p.color}" onclick="showProfile('${p.id}')">
+      <div class="pav-lg">${av}<div class="pav-ov">${I.cam}</div></div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-role">${p.role||''}${p.age?` · ${p.age}y`:''}</div>
+      <div class="p-stats">
+        <div class="schip">${(p.medicines||[]).length} meds</div>
+        ${(low.length+zero.length)?`<div class="schip w">${low.length+zero.length} alert</div>`:''}
+      </div>
+    </div>`;
+  });
+  html+=`<div class="add-pcard" onclick="openAddProfile()">
+    <div class="add-ring"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    <div style="font-size:13px;font-weight:600;">Add Family Member</div>
+  </div>`;
+  document.getElementById('pgrid').innerHTML=html;
+  document.getElementById('home-alerts').innerHTML=ha;
+}
+
+function renderSB(){
+  document.getElementById('sb-profiles').innerHTML=S.profiles.map(p=>{
+    const av=p.img?`<img src="${p.img}">`:`<div style="opacity:0.6">${I.person}</div>`;
+    return `<div class="pnav" onclick="showProfile('${p.id}')" data-profile="${p.id}"><div class="pav-xs">${av}</div>${p.name}</div>`;
+  }).join('');
+}
+
+function renderBN(){
+  document.getElementById('bn-profiles').innerHTML=S.profiles.map(p=>{
+    const av=p.img?`<img src="${p.img}">`:`<div style="font-size:11px;opacity:0.6">${I.person}</div>`;
+    return `<div class="bn-profile-btn" onclick="showProfile('${p.id}')" data-bnp="${p.id}">
+      <div class="bn-pav">${av}</div>
+      <div class="bn-pname">${p.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSOS(){
+  const list=document.getElementById('sos-list');
+  let ha='';
+  if(!S.sosMeds.length){
+    list.innerHTML=`<div class="empty"><div class="empty-ico">${I.pill}</div><h3>No SOS Medicines</h3><p>Add critical medicines to monitor here</p></div>`;
+    document.getElementById('sos-alerts').innerHTML='';return;
+  }
+  S.sosMeds.forEach(m=>{
+    if(!m.count)ha+=`<div class="alert-strip">${I.warn} SOS: <strong>${m.name}</strong> out of stock</div>`;
+    else if(m.count<=4)ha+=`<div class="alert-strip">${I.warn} SOS: <strong>${m.name}</strong> — only ${m.count} left</div>`;
+  });
+  list.innerHTML=S.sosMeds.map(m=>mcard(m,'sos',null)).join('');
+  document.getElementById('sos-alerts').innerHTML=ha;
+}
+
+function renderProfile(id){
+  const p=S.profiles.find(x=>x.id===id);if(!p)return;
+  const av=p.img?`<img src="${p.img}" alt="">`:`<div style="opacity:0.6">${I.person}</div>`;
+  let ha='';
+  (p.medicines||[]).forEach(m=>{
+    if(!m.count)ha+=`<div class="alert-strip">${I.warn} <strong>${m.name}</strong> out of stock</div>`;
+    else if(m.count<=4)ha+=`<div class="alert-strip">${I.warn} <strong>${m.name}</strong> — only ${m.count} left</div>`;
+  });
+  const meds=(p.medicines||[]).length
+    ?`<div class="med-list">${p.medicines.map(m=>mcard(m,'profile',id)).join('')}</div>`
+    :`<div class="empty"><div class="empty-ico">${I.pill}</div><h3>No medicines yet</h3><p>Add medicines for ${p.name}</p></div>`;
+  document.getElementById('pcontent').innerHTML=`
+  <div class="sec-head">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="pav-lg" style="width:58px;height:58px;cursor:pointer;" onclick="document.getElementById('ev-up').click()">
+        ${av}<div class="pav-ov">${I.cam}</div>
+      </div>
+      <input type="file" id="ev-up" accept="image/*" class="hidden" onchange="updPImg(event,'${p.id}')">
+      <div><div class="sec-title">${p.name}</div><div class="sec-sub">${p.role||''}${p.age?` · ${p.age} yrs`:''}</div></div>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="openEditProfile('${p.id}')">${I.edit} Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteProfile('${p.id}')">${I.trash} Remove</button>
+      <button class="btn btn-primary" onclick="openAddMed('profile','${p.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Med
+      </button>
+    </div>
+  </div>
+  ${ha}${meds}`;
+}
+
+function mcard(m,type,pid){
+  const low=m.count<=4;
+  const tid=type==='sos'?'sos':pid;
+  const img=m.img
+    ?`<img src="${m.img}" alt="">`
+    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.75;">${mIco(m.type)}</div>`;
+  const strip=m.stripSize?`<div style="font-size:9.5px;color:var(--text3);margin-top:2px;font-weight:700;letter-spacing:0.3px;">STRIP ${m.stripSize}</div>`:'';
+
+  // Repeat badge
+  const rl = repeatLabel(m);
+  const dueToday = isDueToday(m);
+  const repeatBadge = type!=='sos'
+    ? `<span class="repeat-badge ${!dueToday?'repeat-badge-off':''}">${I.repeat} ${rl}</span>`
+    : '';
+
+  // Dose pills — only show if due today (or as_needed for manual)
+  let doseSec='';
+  const rep = m.repeat || {type:'daily'};
+  const showDoses = type!=='sos' && (m.schedule||[]).length && (dueToday || rep.type==='as_needed');
+  if(showDoses){
+    const pills=(m.schedule||[]).map(t=>{
+      const done=isDone(m.id,t);
+      const[h,mi]=t.split(':').map(Number),td=new Date();td.setHours(h,mi,0,0);
+      const past=td<=new Date();
+      let cls='up';
+      if(done)cls='taken';
+      else if(past&&rep.type!=='as_needed')cls='missed';
+      const ico=done?I.chk:(past&&rep.type!=='as_needed'?`<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`:I.clk);
+      const label = rep.type==='as_needed' ? fmt(t) : fmt(t);
+      return `<div class="dpill ${cls}" onclick="toggleDose('${m.id}','${t}','${tid}')" title="${done?'Mark as not taken':'Mark as taken'}">
+        <div class="dpill-ico">${ico}</div>${label}
+      </div>`;
+    }).join('');
+    const doseTitle = rep.type==='as_needed' ? 'Tap to record a dose' : "Today's Doses — tap to mark taken";
+    doseSec=`<div class="dose-section"><div class="dose-label">${doseTitle}</div><div class="dose-pills">${pills}</div></div>`;
+  } else if(type!=='sos'&&(m.schedule||[]).length&&!dueToday){
+    doseSec=`<div class="dose-section"><div class="dose-label not-due">Not scheduled for today — ${rl}</div></div>`;
+  }
+
+  return `<div class="mcard ${low?'low':''}" id="mc-${m.id}">
+    <div class="mcard-top">
+      <div class="mthumb" onclick="document.getElementById('mi-${m.id}').click()">
+        ${img}
+        <div class="thumb-ov">${I.cam}</div>
+        <input type="file" id="mi-${m.id}" accept="image/*" class="hidden" onchange="updMImg(event,'${m.id}','${tid}')">
+      </div>
+      <div class="minfo">
+        <div class="mname">${m.name}</div>
+        ${m.desc?`<div class="mdesc">${m.desc}</div>`:''}
+        ${repeatBadge}
+      </div>
+      <div class="mcnt-col">
+        <div class="cnt-big ${low?'w':''}">${m.count}</div>
+        <div class="cnt-unit">${unit(m.type)}${strip}</div>
+        <div class="cnt-row">
+          <div class="cb" onclick="adjCnt('${m.id}','${tid}',-1)">−</div>
+          <input class="ci" type="number" value="${m.count}" min="0" onchange="setCnt('${m.id}','${tid}',this.value)" onblur="setCnt('${m.id}','${tid}',this.value)">
+          <div class="cb" onclick="adjCnt('${m.id}','${tid}',1)">+</div>
+        </div>
+      </div>
+    </div>
+    ${doseSec}
+    <div class="mcard-actions">
+      <button class="btn btn-green btn-sm" onclick="openStrip('${m.id}','${tid}')">${I.cart} Strip</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditMed('${m.id}','${tid}')">${I.edit} Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="delMed('${m.id}','${tid}')">${I.trash}</button>
+    </div>
+  </div>`;
+}
+
+// ─── DOSE TOGGLE ───
+function toggleDose(mid,time,tid){
+  const m=findM(mid,tid);if(!m)return;
+  if(isDone(mid,time)){
+    m.count+=1;
+    markUndone(mid,time);
+    toast('Dose unmarked — tablet returned');
+  }else{
+    if(m.count>0)m.count=Math.max(0,m.count-1);
+    markDone(mid,time);
+    toast('Dose marked as taken ✓');
+  }
+  save();refrsh(tid);calcAlerts();
+}
+
+// ─── NAV ───
+function showPage(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-page]').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('[data-profile]').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('[data-bn]').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('[data-bnp]').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  document.querySelector('[data-page="'+pg+'"]')?.classList.add('active');
+  document.querySelector('[data-bn="'+pg+'"]')?.classList.add('active');
+}
+function showProfile(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-page],[data-bn]').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('[data-profile],[data-bnp]').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-profile').classList.add('active');
+  document.querySelector('[data-profile="'+id+'"]')?.classList.add('active');
+  document.querySelector('[data-bnp="'+id+'"]')?.classList.add('active');
+  renderProfile(id);
+}
+
+// ─── PROFILE CRUD ───
+function openAddProfile(){
+  S.editPId=null;S.pImg=null;S.color=1;
+  document.getElementById('p-name').value='';
+  document.getElementById('p-role').value='';
+  document.getElementById('p-age').value='';
+  document.getElementById('pav-prev').innerHTML=I.person;
+  document.getElementById('pm-title').textContent='Add Family Member';
+  updSw(1);openModal('modal-profile');
+}
+function openEditProfile(id){
+  const p=S.profiles.find(x=>x.id===id);if(!p)return;
+  S.editPId=id;S.pImg=p.img||null;S.color=p.color||1;
+  document.getElementById('p-name').value=p.name;
+  document.getElementById('p-role').value=p.role||'';
+  document.getElementById('p-age').value=p.age||'';
+  document.getElementById('pav-prev').innerHTML=p.img?`<img src="${p.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<div style="opacity:0.6">${I.person}</div>`;
+  document.getElementById('pm-title').textContent='Edit Profile';
+  updSw(p.color||1);openModal('modal-profile');
+}
+function saveProfile(){
+  const name=document.getElementById('p-name').value.trim();
+  if(!name){toast('Please enter a name');return;}
+  if(S.editPId){
+    const p=S.profiles.find(x=>x.id===S.editPId);
+    if(p){p.name=name;p.role=document.getElementById('p-role').value.trim();p.age=document.getElementById('p-age').value;p.color=S.color;if(S.pImg)p.img=S.pImg;}
+  }else{
+    S.profiles.push({id:'p'+Date.now(),name,role:document.getElementById('p-role').value.trim(),age:document.getElementById('p-age').value,color:S.color,img:S.pImg||null,medicines:[]});
+  }
+  closeModal('modal-profile');save();renderAll();toast('Profile saved');
+}
+function confirmDeleteProfile(id){
+  const p=S.profiles.find(x=>x.id===id);if(!p)return;
+  document.getElementById('confirm-title').textContent=`Remove ${p.name}?`;
+  document.getElementById('confirm-msg').textContent=`This will permanently remove ${p.name}'s profile and all their medicines. This cannot be undone.`;
+  document.getElementById('confirm-ok').textContent='Remove Profile';
+  S.confirmCb=()=>{S.profiles=S.profiles.filter(x=>x.id!==id);save();renderAll();showPage('home');toast(`${p.name} removed`);};
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');S.confirmCb=null;}
+function doConfirm(){if(S.confirmCb)S.confirmCb();closeConfirm();}
+function previewPImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{S.pImg=ev.target.result;document.getElementById('pav-prev').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`};r.readAsDataURL(f);
+}
+function updPImg(e,id){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{const p=S.profiles.find(x=>x.id===id);if(p){p.img=ev.target.result;save();renderProfile(id);renderSB();renderBN();renderHome();}};r.readAsDataURL(f);
+}
+function pickColor(n){S.color=n;updSw(n);}
+function updSw(n){document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s.dataset.c==n));}
+
+// ─── MEDICINE CRUD ───
+function openAddMed(type,pid){
+  S.editMId=null;S.mImg=null;S.times=[];
+  S.repeat={type:'daily',days:[],every:2,startDate:todayStr()};
+  S.target={type,pid:pid||null};
+  ['m-name','m-desc','m-count','m-strip'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-type').value='tablet';
+  document.getElementById('m-img-prev').innerHTML=`<div style="opacity:0.5">${I.pill}</div>`;
+  document.querySelectorAll('#time-chips .chip,#strip-presets .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('#time-chips .chip[data-custom]').forEach(c=>c.remove());
+  document.getElementById('mm-title').textContent=type==='sos'?'Add SOS Medicine':'Add Medicine';
+  document.getElementById('sched-grp').style.display=type==='sos'?'none':'block';
+  syncRepeatUI();
+  openModal('modal-medicine');
+}
+function openEditMed(mid,tid){
+  let m;
+  if(tid==='sos'){m=S.sosMeds.find(x=>x.id===mid);S.target={type:'sos',pid:null};}
+  else{const p=S.profiles.find(x=>x.id===tid);m=p?.medicines.find(x=>x.id===mid);S.target={type:'profile',pid:tid};}
+  if(!m)return;
+  S.editMId=mid;S.mImg=m.img||null;S.times=[...(m.schedule||[])];
+  S.repeat=m.repeat ? JSON.parse(JSON.stringify(m.repeat)) : {type:'daily',days:[],every:2,startDate:todayStr()};
+  document.getElementById('m-name').value=m.name;
+  document.getElementById('m-desc').value=m.desc||'';
+  document.getElementById('m-count').value=m.count;
+  document.getElementById('m-type').value=m.type||'tablet';
+  document.getElementById('m-strip').value=m.stripSize||'';
+  document.getElementById('m-img-prev').innerHTML=m.img?`<img src="${m.img}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`:`<div style="opacity:0.7">${mIco(m.type)}</div>`;
+  document.querySelectorAll('#time-chips .chip[data-custom]').forEach(c=>c.remove());
+  const presetTimes=['06:00','08:00','12:00','15:00','18:00','21:00','22:00'];
+  document.querySelectorAll('#time-chips .chip').forEach(c=>c.classList.toggle('on',S.times.includes(c.dataset.t)));
+  S.times.filter(t=>!presetTimes.includes(t)).forEach(t=>{
+    const el=document.createElement('div');
+    el.className='chip on';el.dataset.t=t;el.dataset.custom='1';el.textContent=fmt(t);
+    el.onclick=()=>toggleTime(el);
+    document.getElementById('time-chips').appendChild(el);
+  });
+  document.querySelectorAll('#strip-presets .chip').forEach(c=>c.classList.toggle('on',parseInt(c.dataset.s)===m.stripSize));
+  document.getElementById('mm-title').textContent=tid==='sos'?'Edit SOS Medicine':'Edit Medicine';
+  document.getElementById('sched-grp').style.display=tid==='sos'?'none':'block';
+  syncRepeatUI();
+  openModal('modal-medicine');
+}
+function saveMed(){
+  const name=document.getElementById('m-name').value.trim();
+  if(!name){toast('Please enter medicine name');return;}
+  // Validate repeat
+  const rep=S.repeat;
+  if((rep.type==='weekdays'||rep.type==='weekly')&&(!rep.days||!rep.days.length)){
+    toast('Please select at least one day');return;
+  }
+  const d={
+    id:S.editMId||'m'+Date.now(),name,
+    desc:document.getElementById('m-desc').value.trim(),
+    count:parseInt(document.getElementById('m-count').value)||0,
+    type:document.getElementById('m-type').value,
+    stripSize:parseInt(document.getElementById('m-strip').value)||null,
+    schedule:[...S.times],
+    repeat:JSON.parse(JSON.stringify(rep)),
+    img:S.mImg||null,
+  };
+  const{type,pid}=S.target;
+  if(type==='sos'){
+    if(S.editMId){const i=S.sosMeds.findIndex(x=>x.id===S.editMId);if(i!==-1)S.sosMeds[i]={...S.sosMeds[i],...d};}
+    else S.sosMeds.push(d);
+    closeModal('modal-medicine');save();renderSOS();
+  }else{
+    const p=S.profiles.find(x=>x.id===pid);if(!p)return;
+    if(S.editMId){const i=p.medicines.findIndex(x=>x.id===S.editMId);if(i!==-1)p.medicines[i]={...p.medicines[i],...d};}
+    else p.medicines.push(d);
+    closeModal('modal-medicine');save();renderProfile(pid);renderHome();
+  }
+  calcAlerts();toast('Medicine saved');
+}
+function delMed(mid,tid){
+  S.confirmCb=()=>{
+    if(tid==='sos'){S.sosMeds=S.sosMeds.filter(m=>m.id!==mid);save();renderSOS();}
+    else{const p=S.profiles.find(x=>x.id===tid);if(p){p.medicines=p.medicines.filter(m=>m.id!==mid);save();renderProfile(tid);renderHome();}}
+    calcAlerts();toast('Medicine removed');
+  };
+  document.getElementById('confirm-title').textContent='Remove Medicine?';
+  document.getElementById('confirm-msg').textContent='This will permanently remove this medicine and its history.';
+  document.getElementById('confirm-ok').textContent='Remove';
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function previewMImg(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{S.mImg=ev.target.result;document.getElementById('m-img-prev').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`};r.readAsDataURL(f);
+}
+function updMImg(e,mid,tid){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>{
+    let m=tid==='sos'?S.sosMeds.find(x=>x.id===mid):S.profiles.find(x=>x.id===tid)?.medicines.find(x=>x.id===mid);
+    if(m){m.img=ev.target.result;save();if(tid==='sos')renderSOS();else{renderProfile(tid);renderHome();}}
+  };r.readAsDataURL(f);
+}
+
+// ─── COUNT ───
+function findM(mid,tid){return tid==='sos'?S.sosMeds.find(m=>m.id===mid):S.profiles.find(x=>x.id===tid)?.medicines.find(m=>m.id===mid);}
+function adjCnt(mid,tid,d){const m=findM(mid,tid);if(!m)return;m.count=Math.max(0,m.count+d);save();refrsh(tid);calcAlerts();}
+function setCnt(mid,tid,v){const m=findM(mid,tid);if(!m)return;m.count=Math.max(0,parseInt(v)||0);save();refrsh(tid);calcAlerts();}
+function refrsh(tid){if(tid==='sos')renderSOS();else{renderProfile(tid);renderHome();}}
+
+// ─── AUTO DECREMENT ───
+// Only fires when app is open. Respects repeat schedule — won't deduct on off-days.
+function autoDecrement(){
+  const now=new Date(),dk=todayStr();
+  S.profiles.forEach(p=>(p.medicines||[]).forEach(m=>{
+    // Skip if not due today or as_needed
+    if(!isDueToday(m)||(m.repeat&&m.repeat.type==='as_needed'))return;
+    (m.schedule||[]).forEach(t=>{
+      const[h,mi]=t.split(':').map(Number),sd=new Date();sd.setHours(h,mi,0,0);
+      const autoKey=`auto_${m.id}_${dk}_${t}`;
+      const doneKey=doseKey(m.id,t);
+      if(!localStorage.getItem(autoKey)&&!localStorage.getItem(doneKey)&&sd<=now&&m.count>0){
+        m.count=Math.max(0,m.count-1);
+        localStorage.setItem(autoKey,'1');
+        localStorage.setItem(doneKey,'1');
+      }
+    });
+  }));
+  save();renderAll();
+}
+
+// ─── ALERTS ───
+function calcAlerts(){
+  const al=[];
+  S.profiles.forEach(p=>(p.medicines||[]).forEach(m=>{
+    if(!m.count)al.push(`${p.name} — ${m.name} out of stock`);
+    else if(m.count<=4)al.push(`${p.name} — ${m.name}: ${m.count} left`);
+  }));
+  S.sosMeds.forEach(m=>{
+    if(!m.count)al.push(`SOS: ${m.name} out of stock`);
+    else if(m.count<=4)al.push(`SOS: ${m.name}: ${m.count} left`);
+  });
+  const b=document.getElementById('nbadge');
+  b.textContent=al.length;b.style.display=al.length?'flex':'none';
+  document.getElementById('nlist').innerHTML=al.length
+    ?al.map(a=>`<div class="nitem"><div class="ndot"></div><div><div class="nmsg">${a}</div><div class="ntime">Low stock alert</div></div></div>`).join('')
+    :`<div style="padding:20px;text-align:center;font-size:13px;color:var(--text3);">All medicines well stocked ✓</div>`;
+}
+function toggleNotif(){document.getElementById('npanel').classList.toggle('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('#notif-btn')&&!e.target.closest('#npanel'))document.getElementById('npanel').classList.remove('open');});
+
+// ─── TIME CHIPS ───
+function toggleTime(el){
+  const t=el.dataset.t;
+  if(S.times.includes(t)){S.times=S.times.filter(x=>x!==t);el.classList.remove('on');}
+  else{S.times.push(t);el.classList.add('on');}
+}
+function addCustomTime(){
+  const v=document.getElementById('custom-t').value;if(!v)return;
+  if(!S.times.includes(v)){
+    S.times.push(v);
+    const el=document.createElement('div');
+    el.className='chip on';el.dataset.t=v;el.dataset.custom='1';el.textContent=fmt(v);
+    el.onclick=()=>toggleTime(el);
+    document.getElementById('time-chips').appendChild(el);
+  }
+  document.getElementById('custom-t').value='';
+}
+
+// ─── REPEAT UI ───
+function setRepeatType(type){
+  S.repeat.type=type;
+  if(type==='every_n_days'&&!S.repeat.startDate)S.repeat.startDate=todayStr();
+  syncRepeatUI();
+}
+
+function syncRepeatUI(){
+  const type=S.repeat.type||'daily';
+  // Update type selector chips
+  document.querySelectorAll('.rtype-chip').forEach(c=>c.classList.toggle('on',c.dataset.rt===type));
+  // Show/hide sub-panels
+  document.getElementById('rp-days').style.display=(type==='weekdays'||type==='weekly')?'block':'none';
+  document.getElementById('rp-every').style.display=type==='every_n_days'?'block':'none';
+  // Weekly: single-select day chips; weekdays: multi-select
+  const dayChips=document.querySelectorAll('.rday-chip');
+  dayChips.forEach(c=>{
+    c.classList.toggle('on',(S.repeat.days||[]).includes(parseInt(c.dataset.d)));
+  });
+  // every_n input
+  const evEl=document.getElementById('r-every-n');
+  if(evEl) evEl.value=S.repeat.every||2;
+  const sdEl=document.getElementById('r-start-date');
+  if(sdEl) sdEl.value=S.repeat.startDate||todayStr();
+  // Update preview text
+  updateRepeatPreview();
+}
+
+function toggleRepeatDay(el){
+  const d=parseInt(el.dataset.d);
+  const type=S.repeat.type;
+  if(type==='weekly'){
+    // single select
+    S.repeat.days=[d];
+    document.querySelectorAll('.rday-chip').forEach(c=>c.classList.toggle('on',parseInt(c.dataset.d)===d));
+  } else {
+    // multi select
+    if((S.repeat.days||[]).includes(d)){
+      S.repeat.days=S.repeat.days.filter(x=>x!==d);
+      el.classList.remove('on');
+    } else {
+      S.repeat.days=[...(S.repeat.days||[]),d];
+      el.classList.add('on');
+    }
+  }
+  updateRepeatPreview();
+}
+
+function updateRepeatEvery(){
+  S.repeat.every=parseInt(document.getElementById('r-every-n').value)||2;
+  S.repeat.startDate=document.getElementById('r-start-date').value||todayStr();
+  updateRepeatPreview();
+}
+
+function updateRepeatPreview(){
+  const el=document.getElementById('repeat-preview');
+  if(!el)return;
+  const label=repeatLabel({repeat:S.repeat});
+  el.textContent=label;
+}
+
+// ─── STRIP ───
+function pickStrip(el,s){
+  document.querySelectorAll('#strip-presets .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');document.getElementById('m-strip').value=s;
+}
+function syncStripChip(v){
+  const n=parseInt(v);
+  document.querySelectorAll('#strip-presets .chip').forEach(c=>c.classList.toggle('on',parseInt(c.dataset.s)===n));
+}
+
+// ─── BUY STRIP ───
+function openStrip(mid,tid){
+  const m=findM(mid,tid);if(!m)return;
+  S.bsCtx={mid,tid};
+  const img=document.getElementById('bs-img');
+  img.innerHTML=m.img?`<img src="${m.img}" style="width:100%;height:100%;object-fit:cover;border-radius:7px;">`:`<div style="opacity:0.8">${mIco(m.type)}</div>`;
+  document.getElementById('bs-name').textContent=m.name;
+  document.getElementById('bs-stock').textContent=`In stock: ${m.count} ${unit(m.type)}`;
+  document.getElementById('bs-qty').value=1;
+  document.getElementById('bs-size').value=m.stripSize||'';
+  bsPrev();openModal('modal-strip');
+}
+function chgQty(d){
+  const el=document.getElementById('bs-qty');
+  el.value=Math.max(1,(parseInt(el.value)||1)+d);bsPrev();
+}
+document.addEventListener('input',e=>{if(e.target.id==='bs-qty'||e.target.id==='bs-size')bsPrev();});
+function bsPrev(){
+  const qty=parseInt(document.getElementById('bs-qty').value)||0;
+  const sz=parseInt(document.getElementById('bs-size').value)||0;
+  const pv=document.getElementById('bs-prev');
+  if(!sz){pv.textContent='Enter strip size to preview';pv.className='sp';return;}
+  const m=S.bsCtx?findM(S.bsCtx.mid,S.bsCtx.tid):null;
+  pv.textContent=`${m?m.count:0} + ${qty*sz}  (${qty} × ${sz}) = ${(m?m.count:0)+qty*sz}`;
+  pv.className='sp ready';
+}
+function confirmStrip(){
+  const qty=parseInt(document.getElementById('bs-qty').value)||0;
+  const sz=parseInt(document.getElementById('bs-size').value)||0;
+  if(!sz){toast('Enter tablets per strip');return;}
+  if(!qty){toast('Enter number of strips');return;}
+  const{mid,tid}=S.bsCtx;const m=findM(mid,tid);if(!m)return;
+  m.count+=qty*sz;m.stripSize=sz;
+  save();closeModal('modal-strip');refrsh(tid);calcAlerts();
+  toast(`Added ${qty*sz} tablets to ${m.name}`);
+}
+
+// ─── MODAL ───
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+document.getElementById('confirm-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConfirm();});
+
+// ─── TOAST ───
+function toast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('t-msg').textContent=msg;
+  t.className='toast';void t.offsetWidth;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2900);
+}
+
+// ─── PWA ───
+function setupPWA(){
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredInstall=e;
+    document.getElementById('install-banner').classList.add('show');
+  });
+  window.addEventListener('appinstalled',()=>{
+    document.getElementById('install-banner').classList.remove('show');
+    deferredInstall=null;
+  });
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone;
+  if(isIOS&&!isStandalone&&!localStorage.getItem('ios-hint-dismissed')){
+    const b=document.getElementById('install-banner');
+    b.querySelector('span').textContent='On iOS: tap Share then "Add to Home Screen"';
+    b.querySelector('.dismiss').onclick=()=>{b.classList.remove('show');localStorage.setItem('ios-hint-dismissed','1');};
+    b.querySelector('button:not(.dismiss)').style.display='none';
+    b.classList.add('show');
+  }
+}
+function installPWA(){
+  if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(()=>{deferredInstall=null;document.getElementById('install-banner').classList.remove('show');});}
+}
+
+// ─── HELPERS ───
+function fmt(t){const[h,m]=t.split(':').map(Number);return `${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;}
+function unit(t){return t==='syrup'?'ml':t==='drops'?'doses':'tablets';}
+
+init();
+
+// ─── SERVICE WORKER ───
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(r=>console.log('MedVault SW:',r.scope))
+      .catch(e=>console.log('SW fail:',e));
+  });
+}
+
+</script>
+</body>
+</html>
