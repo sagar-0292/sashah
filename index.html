@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MedVault">
+<meta name="theme-color" content="#f0ece6">
+<meta name="description" content="Track family medicines, doses, and inventory. Never miss a dose or run out of stock.">
+
+<title>MedVault – Family Medicine Tracker</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- App Styles -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13m0 0-4-4m4 4 4-4M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
+  <span>Add MedVault to your home screen</span>
+  <button onclick="installPWA()">Install</button>
+  <button class="dismiss" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+    </div>
+    <div class="logo-wordmark">Med<em>Vault</em></div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" onclick="toggleNotif()" id="notif-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <div class="notif-badge" id="nbadge"></div>
+    </button>
+  </div>
+</header>
+
+<!-- NOTIF PANEL -->
+<div class="npanel" id="npanel">
+  <div class="nhead">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    Alerts &amp; Reminders
+  </div>
+  <div id="nlist"></div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR (desktop) -->
+  <div class="sidebar">
+    <span class="sb-label">Menu</span>
+    <div class="nav-item active" onclick="showPage('home')" data-page="home">
+      <div class="ni-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      Dashboard
+    </div>
+    <div class="nav-item sos" onclick="showPage('sos')" data-page="sos">
+      <div class="ni-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      SOS Medicines
+    </div>
+    <span class="sb-label">Family</span>
+    <div id="sb-profiles"></div>
+    <div class="add-member" onclick="openAddProfile()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Add Member
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="sec-head">
+        <div><div class="sec-title">Family Overview</div><div class="sec-sub" id="home-date"></div></div>
+        <button class="btn btn-primary" onclick="openAddProfile()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Member
+        </button>
+      </div>
+      <div id="home-alerts"></div>
+      <div class="profiles-grid" id="pgrid"></div>
+    </div>
+
+    <!-- SOS -->
+    <div class="page" id="page-sos">
+      <div class="sec-head">
+        <div><div class="sec-title">SOS Medicines</div><div class="sec-sub">Emergency &amp; critical medicines</div></div>
+        <button class="btn btn-primary" onclick="openAddMed('sos')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add SOS
+        </button>
+      </div>
+      <div class="sos-hero">
+        <div class="sos-hero-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <div><div class="sos-hero-title">Emergency Cabinet</div><div class="sos-hero-desc">Alerts fire when stock drops to 4 or below.</div></div>
+      </div>
+      <div id="sos-alerts"></div>
+      <div class="med-list" id="sos-list"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile"><div id="pcontent"></div></div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="bn-item active" onclick="showPage('home')" data-bn="home">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    Home
+  </div>
+  <div class="bn-profiles-scroll" id="bn-profiles"></div>
+  <div class="bn-item sos-bn" onclick="showPage('sos')" data-bn="sos">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    SOS
+  </div>
+  <div class="bn-item" onclick="openAddProfile()" style="flex:0.8;">
+    <div class="bn-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+    Add
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="moverlay" id="modal-profile">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle" id="pm-title">Add Family Member</div>
+      <div class="mclose" onclick="closeModal('modal-profile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div class="av-wrap">
+        <div class="av-ring" onclick="document.getElementById('p-img-up').click()">
+          <div id="pav-prev" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
+          <div class="av-ov"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        </div>
+        <input type="file" id="p-img-up" accept="image/*" class="hidden" onchange="previewPImg(event)">
+        <div class="av-hint">Tap to upload photo</div>
+      </div>
+      <div class="fg"><label class="fl">Name</label><input class="fi" id="p-name" placeholder="e.g. Dad, Mum, Aarav…"/></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Role</label><input class="fi" id="p-role" placeholder="e.g. Dad, Child…"/></div>
+        <div class="fg"><label class="fl">Age</label><input class="fi" id="p-age" type="number" placeholder="Age"/></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Colour Theme</label>
+        <div class="swatches" id="swatches">
+          <div class="sw" style="background:linear-gradient(135deg,#d4723e,#f0a070)" data-c="1" onclick="pickColor(1)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#2f62aa,#5d90d4)" data-c="2" onclick="pickColor(2)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#2d7d52,#55a878)" data-c="3" onclick="pickColor(3)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#6644aa,#9470d0)" data-c="4" onclick="pickColor(4)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#a06010,#d08838)" data-c="5" onclick="pickColor(5)"></div>
+          <div class="sw" style="background:linear-gradient(135deg,#b83232,#d86060)" data-c="6" onclick="pickColor(6)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-profile')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEDICINE MODAL -->
+<div class="moverlay" id="modal-medicine">
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle" id="mm-title">Add Medicine</div>
+      <div class="mclose" onclick="closeModal('modal-medicine')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div class="mthumb" style="width:64px;height:64px;margin:0 auto;border-radius:14px;cursor:pointer;" onclick="document.getElementById('m-img-up').click()">
+          <div id="m-img-prev" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:10px;"></div>
+          <div class="thumb-ov"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        </div>
+        <input type="file" id="m-img-up" accept="image/*" class="hidden" onchange="previewMImg(event)">
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;">Tap to upload photo</div>
+      </div>
+      <div class="fg"><label class="fl">Medicine Name</label><input class="fi" id="m-name" placeholder="e.g. Paracetamol 500mg"/></div>
+      <div class="fg"><label class="fl">Description / Notes</label><input class="fi" id="m-desc" placeholder="e.g. For fever, after food…"/></div>
+      <div class="f2">
+        <div class="fg"><label class="fl">Current Count</label><input class="fi" id="m-count" type="number" placeholder="e.g. 30" min="0"/></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select class="fs" id="m-type">
+            <option value="tablet">Tablet</option>
+            <option value="capsule">Capsule</option>
+            <option value="syrup">Syrup (ml)</option>
+            <option value="injection">Injection</option>
+            <option value="drops">Drops</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Strip Size <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text3);">— per strip you buy</span></label>
+        <div class="chip-row" id="strip-presets">
+          <div class="chip" data-s="10" onclick="pickStrip(this,10)">10</div>
+          <div class="chip" data-s="14" onclick="pickStrip(this,14)">14</div>
+          <div class="chip" data-s="15" onclick="pickStrip(this,15)">15</div>
+          <div class="chip" data-s="20" onclick="pickStrip(this,20)">20</div>
+          <div class="chip" data-s="30" onclick="pickStrip(this,30)">30</div>
+          <div class="chip" data-s="60" onclick="pickStrip(this,60)">60</div>
+        </div>
+        <input class="fi" type="number" id="m-strip" placeholder="Or custom…" min="1" style="margin-top:8px;" oninput="syncStripChip(this.value)"/>
+      </div>
+      <div class="fg" id="sched-grp">
+
+        <!-- REPEAT TYPE -->
+        <label class="fl">Repeat</label>
+        <div class="chip-row" style="margin-bottom:0;">
+          <div class="chip rtype-chip on" data-rt="daily" onclick="setRepeatType('daily')">Every Day</div>
+          <div class="chip rtype-chip" data-rt="weekdays" onclick="setRepeatType('weekdays')">Specific Days</div>
+          <div class="chip rtype-chip" data-rt="weekly" onclick="setRepeatType('weekly')">Weekly</div>
+          <div class="chip rtype-chip" data-rt="every_n_days" onclick="setRepeatType('every_n_days')">Every N Days</div>
+          <div class="chip rtype-chip" data-rt="as_needed" onclick="setRepeatType('as_needed')">As Needed</div>
+        </div>
+
+        <!-- DAY PICKER (weekdays + weekly) -->
+        <div id="rp-days" style="display:none;margin-top:10px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:7px;" id="rp-days-hint">Select days</div>
+          <div class="chip-row">
+            <div class="chip rday-chip" data-d="0" onclick="toggleRepeatDay(this)">Sun</div>
+            <div class="chip rday-chip" data-d="1" onclick="toggleRepeatDay(this)">Mon</div>
+            <div class="chip rday-chip" data-d="2" onclick="toggleRepeatDay(this)">Tue</div>
+            <div class="chip rday-chip" data-d="3" onclick="toggleRepeatDay(this)">Wed</div>
+            <div class="chip rday-chip" data-d="4" onclick="toggleRepeatDay(this)">Thu</div>
+            <div class="chip rday-chip" data-d="5" onclick="toggleRepeatDay(this)">Fri</div>
+            <div class="chip rday-chip" data-d="6" onclick="toggleRepeatDay(this)">Sat</div>
+          </div>
+        </div>
+
+        <!-- EVERY N DAYS -->
+        <div id="rp-every" style="display:none;margin-top:10px;">
+          <div class="f2" style="gap:10px;">
+            <div class="fg" style="margin-bottom:0;">
+              <label class="fl">Every</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input class="fi" type="number" id="r-every-n" value="2" min="2" max="90" style="width:72px;text-align:center;font-weight:700;" oninput="updateRepeatEvery()"/>
+                <span style="font-size:13px;color:var(--text2);font-weight:500;">days</span>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label class="fl">Starting</label>
+              <input class="fi" type="date" id="r-start-date" oninput="updateRepeatEvery()"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPEAT PREVIEW -->
+        <div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12.5px;color:var(--text2);display:flex;align-items:center;gap:7px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span id="repeat-preview">Every day</span>
+        </div>
+
+        <!-- DOSE TIMES -->
+        <label class="fl" style="margin-top:14px;">Dose Times</label>
+        <div class="chip-row" id="time-chips">
+          <div class="chip" data-t="06:00" onclick="toggleTime(this)">6 AM</div>
+          <div class="chip" data-t="08:00" onclick="toggleTime(this)">8 AM</div>
+          <div class="chip" data-t="12:00" onclick="toggleTime(this)">12 PM</div>
+          <div class="chip" data-t="15:00" onclick="toggleTime(this)">3 PM</div>
+          <div class="chip" data-t="18:00" onclick="toggleTime(this)">6 PM</div>
+          <div class="chip" data-t="21:00" onclick="toggleTime(this)">9 PM</div>
+          <div class="chip" data-t="22:00" onclick="toggleTime(this)">10 PM</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:9px;align-items:center;">
+          <input class="fi" type="time" id="custom-t" style="flex:1;"/>
+          <button class="btn btn-ghost btn-sm" onclick="addCustomTime()">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-medicine')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMed()">Save Medicine</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUY STRIP MODAL -->
+<div class="moverlay" id="modal-strip">
+  <div class="modal" style="max-width:400px;">
+    <div class="mhead">
+      <div class="mtitle">Buy a Strip</div>
+      <div class="mclose" onclick="closeModal('modal-strip')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+    </div>
+    <div class="mbody">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px;background:var(--surface2);border-radius:var(--r-md);border:1px solid var(--border);">
+        <div id="bs-img" style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:var(--surface3);border-radius:9px;overflow:hidden;flex-shrink:0;border:1px solid var(--border);"></div>
+        <div><div id="bs-name" style="font-weight:700;font-size:14px;"></div><div id="bs-stock" style="font-size:12px;color:var(--text3);margin-top:2px;"></div></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Strips Bought</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+          <div class="cb" style="width:36px;height:36px;" onclick="chgQty(-1)">−</div>
+          <input class="fi" type="number" id="bs-qty" value="1" min="1" style="text-align:center;font-size:18px;font-weight:800;max-width:70px;padding:8px 4px;"/>
+          <div class="cb" style="width:36px;height:36px;" onclick="chgQty(1)">+</div>
+          <span style="font-size:13px;color:var(--text2);font-weight:500;">strip(s)</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Tablets per strip</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="fi" type="number" id="bs-size" min="1" style="font-size:15px;font-weight:700;max-width:110px;"/>
+          <span style="font-size:12px;color:var(--text3);">per strip</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Pre-filled from saved size. Edit if this strip differs.</div>
+      </div>
+      <div class="sp" id="bs-prev">Enter strip size to preview</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-strip')">Cancel</button>
+      <button class="btn btn-primary" style="background:linear-gradient(145deg,#3d9e6e,#2a7a52);box-shadow:0 4px 14px rgba(45,125,82,0.28);" onclick="confirmStrip()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Add to Inventory
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+    <div class="confirm-title" id="confirm-title">Delete Profile?</div>
+    <div class="confirm-msg" id="confirm-msg">This will permanently remove the profile and all their medicines.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok" onclick="doConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="t-msg"></span></div>
+<!-- App Script -->
+<script src="app.js"></script>
+</body>
+</html>
