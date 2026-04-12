@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/daily-check",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "functions": {
+    "api/daily-check.js": {
+      "maxDuration": 30
+    },
+    "api/update-schedule.js": {
+      "maxDuration": 10
+    }
+  }
+}
