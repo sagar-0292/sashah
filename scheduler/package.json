@@ -1,0 +1,12 @@
+{
+  "name": "medvault-scheduler",
+  "version": "1.0.0",
+  "description": "MedVault daily alert scheduler — runs on Vercel cron",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
