@@ -159,7 +159,7 @@ function updateGenerateState() {
     sub.textContent = 'Add at least one photo to continue';
   } else if (!hasKey()) {
     btn.disabled = true;
-    sub.textContent = 'Add your free AI key in Settings ⚙️ to continue';
+    sub.textContent = 'Add your free AI key in Settings to continue';
   } else {
     btn.disabled = false;
     sub.textContent = `${photos.length} photo${photos.length > 1 ? 's' : ''} ready`;
@@ -364,7 +364,7 @@ async function generateListing() {
     const parsed = normalizeResult(extractJson(rawText));
     showResult(parsed);
     saveToHistory(parsed);
-    toast('Listing ready ✨', 'success');
+    toast('Listing ready', 'success');
   } catch (err) {
     console.error(err);
     toast(err.message || 'Something went wrong while generating the listing.', 'error');
@@ -389,7 +389,7 @@ function showResult(result) {
   result.bullets.forEach((b) => {
     const li = document.createElement('li');
     li.contentEditable = 'true';
-    li.innerHTML = `<span class="bullet-dot">●</span><span>${escapeHtml(b)}</span>`;
+    li.innerHTML = `<span class="bullet-dot">✦</span><span>${escapeHtml(b)}</span>`;
     bulletsEl.appendChild(li);
   });
 
@@ -446,7 +446,7 @@ function resultToText(r) {
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
-    toast('Copied to clipboard 📋', 'success');
+    toast('Copied to clipboard', 'success');
   } catch (_) {
     // Fallback for older mobile browsers
     const ta = document.createElement('textarea');
@@ -457,7 +457,7 @@ async function copyText(text) {
     ta.select();
     try {
       document.execCommand('copy');
-      toast('Copied to clipboard 📋', 'success');
+      toast('Copied to clipboard', 'success');
     } catch {
       toast('Could not copy automatically — please select and copy manually.', 'error');
     }
@@ -493,7 +493,7 @@ function initResultActions() {
     a.click();
     a.remove();
     URL.revokeObjectURL(a.href);
-    toast('Downloaded 📄', 'success');
+    toast('Downloaded', 'success');
   });
 
   $('#regenerateBtn').addEventListener('click', generateListing);
@@ -643,7 +643,7 @@ function initSettings() {
     localStorage.setItem(LS.apiKey, $('#apiKey').value.trim());
     updateGenerateState();
     closeSheet($('#settingsOverlay'));
-    toast('Settings saved ✔️', 'success');
+    toast('Settings saved', 'success');
   });
 
   $('#clearKeyBtn').addEventListener('click', () => {
@@ -678,7 +678,7 @@ function initSettings() {
       if (provider === 'openrouter') await callOpenRouter(prompt, settings);
       else await callGemini(prompt, settings);
       photos = savedPhotos;
-      toast('Connection works! ✅', 'success');
+      toast('Connection works!', 'success');
     } catch (err) {
       toast(err.message || 'Could not connect with that key.', 'error');
     } finally {

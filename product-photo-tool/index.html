@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SnapList">
-<meta name="theme-color" content="#141221">
+<meta name="theme-color" content="#F7F1E6">
 <meta name="description" content="Snap a product photo and get an AI-written title, description, bullet points and tags ready to paste into your online store listing.">
 
 <title>SnapList – AI Product Description Writer</title>
@@ -19,7 +19,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Petit+Formal+Script&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -30,29 +30,42 @@
   <!-- ===== Header ===== -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">📸</span>
-      <span class="brand-name">SnapList</span>
+      <span class="brand-mark">✦</span>
+      <span class="brand-name">Snap<span class="brand-script">List</span></span>
     </div>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="historyBtn" title="Recent listings" aria-label="Recent listings">🕒</button>
-      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙️</button>
-    </div>
+    <nav class="topbar-actions">
+      <button class="nav-link-btn" id="historyBtn" title="Recent listings" aria-label="Recent listings">History</button>
+      <button class="nav-link-btn" id="settingsBtn" title="Settings" aria-label="Settings">Settings</button>
+    </nav>
   </header>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span class="ticker-item">free ai key</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">private on your device</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">ready in seconds</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">made for mobile</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">free ai key</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">private on your device</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">ready in seconds</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">made for mobile</span><span class="ticker-sep">✦</span>
+    </div>
+  </div>
 
   <main class="content" id="content">
 
     <!-- ===== First-run intro ===== -->
     <section class="intro-card" id="introCard">
-      <h1>Turn a product photo into a ready-to-post listing</h1>
+      <h1>Turn a photo into a <em class="script-accent">ready-to-sell</em> listing</h1>
       <p>Snap or upload a photo, tell it a little about the item, and get an AI-written <strong>title, description, bullet points and tags</strong> you can paste straight into Amazon, Etsy, Shopify, eBay, Instagram or anywhere else you sell.</p>
-      <p class="intro-free">Runs on a <strong>free AI API key</strong> that only your device uses — nothing is stored on any server.</p>
+      <p class="intro-free">Runs on a <strong>free AI key</strong> that only your device uses — nothing is stored on any server.</p>
       <button class="btn btn-primary btn-block" id="introSetupBtn">Set up my free AI key →</button>
       <button class="btn-link" id="introDismiss">I've already set this up</button>
     </section>
 
     <!-- ===== Key missing banner ===== -->
     <div class="banner banner-warn hidden" id="noKeyBanner">
-      <span>⚠️ Add a free AI API key to start generating descriptions.</span>
+      <span>Add a free AI key to start generating descriptions.</span>
       <button class="btn btn-sm" id="noKeyBannerBtn">Add key</button>
     </div>
 
@@ -67,7 +80,7 @@
         <label class="photo-add" id="photoAddTile">
           <input type="file" id="cameraInput" accept="image/*" multiple class="visually-hidden">
           <span class="photo-add-icon">＋</span>
-          <span class="photo-add-label">Camera / Gallery</span>
+          <span class="photo-add-label">Add photo</span>
         </label>
       </div>
     </section>
@@ -75,7 +88,7 @@
     <!-- ===== Step 2: Details ===== -->
     <section class="card" id="detailsCard">
       <div class="card-head collapsible" id="detailsToggle">
-        <h2><span class="step-num">2</span> Tell it about the product <span class="optional-tag">optional, but improves results</span></h2>
+        <h2><span class="step-num">2</span> Tell it about the product <span class="optional-tag">optional</span></h2>
         <span class="chevron" id="detailsChevron">▾</span>
       </div>
 
@@ -157,7 +170,7 @@
     <!-- ===== Generate ===== -->
     <div class="generate-bar">
       <button class="btn btn-primary btn-block btn-lg" id="generateBtn" disabled>
-        <span id="generateBtnLabel">✨ Write my listing</span>
+        <span id="generateBtnLabel">Write my listing</span>
       </button>
       <p class="generate-sub" id="generateSub">Add at least one photo to continue</p>
     </div>
@@ -173,7 +186,7 @@
 
       <div class="card result-card">
         <div class="card-head">
-          <h2>📝 Listing title</h2>
+          <h2>Listing title</h2>
           <button class="chip-btn copy-btn" data-copy="#resTitle">Copy</button>
         </div>
         <input type="text" id="resTitle" class="result-title-input">
@@ -181,7 +194,7 @@
 
       <div class="card result-card">
         <div class="card-head">
-          <h2>⚡ Short description</h2>
+          <h2>Short description</h2>
           <button class="chip-btn copy-btn" data-copy="#resShort">Copy</button>
         </div>
         <textarea id="resShort" rows="2" class="result-textarea"></textarea>
@@ -189,7 +202,7 @@
 
       <div class="card result-card">
         <div class="card-head">
-          <h2>📖 Full description</h2>
+          <h2>Full description</h2>
           <button class="chip-btn copy-btn" data-copy="#resLong">Copy</button>
         </div>
         <textarea id="resLong" rows="8" class="result-textarea"></textarea>
@@ -197,7 +210,7 @@
 
       <div class="card result-card">
         <div class="card-head">
-          <h2>✅ Highlights</h2>
+          <h2>Highlights</h2>
           <button class="chip-btn copy-btn" data-copy-list="#resBullets">Copy</button>
         </div>
         <ul class="bullet-list" id="resBullets"></ul>
@@ -205,7 +218,7 @@
 
       <div class="card result-card">
         <div class="card-head">
-          <h2>🏷️ Tags & keywords</h2>
+          <h2>Tags &amp; keywords</h2>
           <button class="chip-btn copy-btn" data-copy-tags="#resTags">Copy</button>
         </div>
         <div class="tag-list" id="resTags"></div>
@@ -213,9 +226,9 @@
       </div>
 
       <div class="result-actions">
-        <button class="btn btn-secondary" id="copyAllBtn">📋 Copy everything</button>
-        <button class="btn btn-secondary" id="downloadBtn">⬇️ Download .txt</button>
-        <button class="btn btn-secondary" id="regenerateBtn">🔁 Regenerate</button>
+        <button class="btn btn-secondary" id="copyAllBtn">Copy everything</button>
+        <button class="btn btn-secondary" id="downloadBtn">Download .txt</button>
+        <button class="btn btn-secondary" id="regenerateBtn">Regenerate</button>
         <button class="btn-link" id="startOverBtn">Start a new listing</button>
       </div>
     </section>
