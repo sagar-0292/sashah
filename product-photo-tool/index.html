@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SnapList">
+<meta name="theme-color" content="#141221">
+<meta name="description" content="Snap a product photo and get an AI-written title, description, bullet points and tags ready to paste into your online store listing.">
+
+<title>SnapList – AI Product Description Writer</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== Header ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">📸</span>
+      <span class="brand-name">SnapList</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="historyBtn" title="Recent listings" aria-label="Recent listings">🕒</button>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main class="content" id="content">
+
+    <!-- ===== First-run intro ===== -->
+    <section class="intro-card" id="introCard">
+      <h1>Turn a product photo into a ready-to-post listing</h1>
+      <p>Snap or upload a photo, tell it a little about the item, and get an AI-written <strong>title, description, bullet points and tags</strong> you can paste straight into Amazon, Etsy, Shopify, eBay, Instagram or anywhere else you sell.</p>
+      <p class="intro-free">Runs on a <strong>free AI API key</strong> that only your device uses — nothing is stored on any server.</p>
+      <button class="btn btn-primary btn-block" id="introSetupBtn">Set up my free AI key →</button>
+      <button class="btn-link" id="introDismiss">I've already set this up</button>
+    </section>
+
+    <!-- ===== Key missing banner ===== -->
+    <div class="banner banner-warn hidden" id="noKeyBanner">
+      <span>⚠️ Add a free AI API key to start generating descriptions.</span>
+      <button class="btn btn-sm" id="noKeyBannerBtn">Add key</button>
+    </div>
+
+    <!-- ===== Step 1: Photos ===== -->
+    <section class="card" id="photoCard">
+      <div class="card-head">
+        <h2><span class="step-num">1</span> Add product photos</h2>
+        <span class="hint">Up to 4 · clear background helps most</span>
+      </div>
+
+      <div class="photo-grid" id="photoGrid">
+        <label class="photo-add" id="photoAddTile">
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" class="visually-hidden">
+          <span class="photo-add-icon">＋</span>
+          <span class="photo-add-label">Camera / Gallery</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ===== Step 2: Details ===== -->
+    <section class="card" id="detailsCard">
+      <div class="card-head collapsible" id="detailsToggle">
+        <h2><span class="step-num">2</span> Tell it about the product <span class="optional-tag">optional, but improves results</span></h2>
+        <span class="chevron" id="detailsChevron">▾</span>
+      </div>
+
+      <div class="card-body" id="detailsBody">
+        <div class="field">
+          <label for="productName">Product name / brand (if known)</label>
+          <input type="text" id="productName" placeholder="e.g. Kanpur Leather Co. Messenger Bag">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category">
+              <option value="">Let AI decide</option>
+              <option>Fashion & Apparel</option>
+              <option>Footwear</option>
+              <option>Jewelry & Accessories</option>
+              <option>Home & Kitchen</option>
+              <option>Furniture</option>
+              <option>Beauty & Personal Care</option>
+              <option>Electronics</option>
+              <option>Toys & Games</option>
+              <option>Sports & Outdoors</option>
+              <option>Arts, Crafts & Handmade</option>
+              <option>Grocery & Food</option>
+              <option>Pet Supplies</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="platform">Where you're selling</label>
+            <select id="platform">
+              <option value="a general online store">General / My website</option>
+              <option value="Amazon">Amazon</option>
+              <option value="Etsy">Etsy</option>
+              <option value="Shopify">Shopify</option>
+              <option value="eBay">eBay</option>
+              <option value="Instagram / WhatsApp catalog">Instagram / WhatsApp</option>
+              <option value="Flipkart">Flipkart</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="features">Key details, materials, size, price range… (anything the photo can't show)</label>
+          <textarea id="features" rows="3" placeholder="e.g. Genuine buffalo leather, hand-stitched, fits a 14&quot; laptop, available in tan &amp; black, ₹2,499"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="tone">Tone of voice</label>
+            <select id="tone">
+              <option>Friendly & persuasive</option>
+              <option>Professional</option>
+              <option>Luxury & premium</option>
+              <option>Playful & fun</option>
+              <option>Minimal & to the point</option>
+              <option>Warm & handmade</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="length">Description length</label>
+            <select id="length">
+              <option>Standard</option>
+              <option>Short & punchy</option>
+              <option>Detailed</option>
+            </select>
+          </div>
+        </div>
+
+        <label class="switch-row">
+          <span>Use emojis in the listing</span>
+          <input type="checkbox" id="useEmojis">
+          <span class="switch"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ===== Generate ===== -->
+    <div class="generate-bar">
+      <button class="btn btn-primary btn-block btn-lg" id="generateBtn" disabled>
+        <span id="generateBtnLabel">✨ Write my listing</span>
+      </button>
+      <p class="generate-sub" id="generateSub">Add at least one photo to continue</p>
+    </div>
+
+    <!-- ===== Loading ===== -->
+    <section class="card loading-card hidden" id="loadingCard">
+      <div class="spinner"></div>
+      <p id="loadingText">Looking closely at your photos…</p>
+    </section>
+
+    <!-- ===== Results ===== -->
+    <section class="results hidden" id="resultsSection">
+
+      <div class="card result-card">
+        <div class="card-head">
+          <h2>📝 Listing title</h2>
+          <button class="chip-btn copy-btn" data-copy="#resTitle">Copy</button>
+        </div>
+        <input type="text" id="resTitle" class="result-title-input">
+      </div>
+
+      <div class="card result-card">
+        <div class="card-head">
+          <h2>⚡ Short description</h2>
+          <button class="chip-btn copy-btn" data-copy="#resShort">Copy</button>
+        </div>
+        <textarea id="resShort" rows="2" class="result-textarea"></textarea>
+      </div>
+
+      <div class="card result-card">
+        <div class="card-head">
+          <h2>📖 Full description</h2>
+          <button class="chip-btn copy-btn" data-copy="#resLong">Copy</button>
+        </div>
+        <textarea id="resLong" rows="8" class="result-textarea"></textarea>
+      </div>
+
+      <div class="card result-card">
+        <div class="card-head">
+          <h2>✅ Highlights</h2>
+          <button class="chip-btn copy-btn" data-copy-list="#resBullets">Copy</button>
+        </div>
+        <ul class="bullet-list" id="resBullets"></ul>
+      </div>
+
+      <div class="card result-card">
+        <div class="card-head">
+          <h2>🏷️ Tags & keywords</h2>
+          <button class="chip-btn copy-btn" data-copy-tags="#resTags">Copy</button>
+        </div>
+        <div class="tag-list" id="resTags"></div>
+        <p class="hint" id="resCategoryHint"></p>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-secondary" id="copyAllBtn">📋 Copy everything</button>
+        <button class="btn btn-secondary" id="downloadBtn">⬇️ Download .txt</button>
+        <button class="btn btn-secondary" id="regenerateBtn">🔁 Regenerate</button>
+        <button class="btn-link" id="startOverBtn">Start a new listing</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast hidden" id="toast"></div>
+
+  <!-- ===== Settings Sheet ===== -->
+  <div class="sheet-overlay hidden" id="settingsOverlay">
+    <div class="sheet" id="settingsSheet">
+      <div class="sheet-handle"></div>
+      <h2>AI provider settings</h2>
+      <p class="sheet-desc">SnapList calls the AI provider directly from your phone or browser. Your API key is saved only in this device's local storage — it is never sent anywhere except the provider you choose below.</p>
+
+      <div class="field">
+        <label for="provider">AI provider</label>
+        <select id="provider">
+          <option value="gemini">Google Gemini (recommended — free, generous limit)</option>
+          <option value="openrouter">OpenRouter (free vision models)</option>
+        </select>
+      </div>
+
+      <div class="field" id="geminiModelField">
+        <label for="geminiModel">Gemini model</label>
+        <select id="geminiModel">
+          <option value="gemini-2.0-flash">gemini-2.0-flash (fast, recommended)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        </select>
+      </div>
+
+      <div class="field hidden" id="openrouterModelField">
+        <label for="openrouterModel">OpenRouter free model</label>
+        <select id="openrouterModel">
+          <option value="google/gemini-2.0-flash-exp:free">google/gemini-2.0-flash-exp:free</option>
+          <option value="qwen/qwen2.5-vl-32b-instruct:free">qwen/qwen2.5-vl-32b-instruct:free</option>
+          <option value="meta-llama/llama-3.2-11b-vision-instruct:free">meta-llama/llama-3.2-11b-vision-instruct:free</option>
+          <option value="mistralai/mistral-small-3.1-24b-instruct:free">mistralai/mistral-small-3.1-24b-instruct:free</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="apiKey">API key</label>
+        <div class="key-input-row">
+          <input type="password" id="apiKey" placeholder="Paste your free API key here" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="icon-btn" id="toggleKeyVisibility" type="button" title="Show/hide key">👁️</button>
+        </div>
+      </div>
+
+      <div class="get-key-box" id="getKeyBox">
+        <!-- filled by JS depending on provider -->
+      </div>
+
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" id="testKeyBtn">Test connection</button>
+        <button class="btn btn-primary" id="saveKeyBtn">Save</button>
+      </div>
+      <button class="btn-link btn-link-danger" id="clearKeyBtn">Remove saved key from this device</button>
+      <button class="btn-link" id="closeSettingsBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- ===== History Sheet ===== -->
+  <div class="sheet-overlay hidden" id="historyOverlay">
+    <div class="sheet" id="historySheet">
+      <div class="sheet-handle"></div>
+      <h2>Recent listings</h2>
+      <p class="sheet-desc">Saved on this device only. Tap one to reopen it.</p>
+      <div id="historyList" class="history-list"></div>
+      <button class="btn-link btn-link-danger" id="clearHistoryBtn">Clear all history</button>
+      <button class="btn-link" id="closeHistoryBtn">Close</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
