@@ -42,12 +42,29 @@ function toast(msg, type) {
 }
 
 /* ===================== Settings storage ===================== */
+// Model IDs providers have retired since this app shipped. Anyone with one of
+// these saved from before gets bumped to the current default automatically,
+// instead of hitting a confusing "model no longer available" error forever.
+const RETIRED_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+const RETIRED_OPENROUTER_MODELS = [
+  'google/gemini-2.0-flash-exp:free',
+  'qwen/qwen2.5-vl-32b-instruct:free',
+  'meta-llama/llama-3.2-11b-vision-instruct:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+];
+const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
+const DEFAULT_OPENROUTER_MODEL = 'openrouter/free';
+
 function getSettings() {
+  let geminiModel = localStorage.getItem(LS.geminiModel) || DEFAULT_GEMINI_MODEL;
+  let openrouterModel = localStorage.getItem(LS.openrouterModel) || DEFAULT_OPENROUTER_MODEL;
+  if (RETIRED_GEMINI_MODELS.includes(geminiModel)) geminiModel = DEFAULT_GEMINI_MODEL;
+  if (RETIRED_OPENROUTER_MODELS.includes(openrouterModel)) openrouterModel = DEFAULT_OPENROUTER_MODEL;
   return {
     provider: localStorage.getItem(LS.provider) || 'gemini',
     apiKey: localStorage.getItem(LS.apiKey) || '',
-    geminiModel: localStorage.getItem(LS.geminiModel) || 'gemini-2.0-flash',
-    openrouterModel: localStorage.getItem(LS.openrouterModel) || 'google/gemini-2.0-flash-exp:free',
+    geminiModel,
+    openrouterModel,
   };
 }
 function hasKey() {
