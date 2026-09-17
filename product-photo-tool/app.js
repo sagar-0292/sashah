@@ -690,9 +690,22 @@ function initSettings() {
 
 /* ===================== Service worker ===================== */
 function initServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  if (!('serviceWorker' in navigator)) return;
+
+  // Only a genuine update (this page load was already controlled by a
+  // service worker, and it just got replaced) should force a reload. A
+  // first-ever install has no old JS to be stuck on, so skip it there.
+  const hadControllerAtLoad = !!navigator.serviceWorker.controller;
+  let reloadedForUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadControllerAtLoad || reloadedForUpdate) return;
+    reloadedForUpdate = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    reg.update().catch(() => {});
+  }).catch(() => {});
 }
 
 /* ===================== Init ===================== */
