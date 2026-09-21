@@ -4,7 +4,7 @@
 // server-side key, and returns a clean parsed listing. The API key never
 // reaches the browser.
 
-import { getDb, requireUser, setCors, HttpError, MONTHLY_QUOTA, isSubscriptionActive } from './_lib.js';
+import { getDb, requireUser, setCors, HttpError, MONTHLY_QUOTA, isSubscriptionActive, recordGeminiCallAndWarn } from './_lib.js';
 
 const MAX_PHOTOS = 4;
 const MAX_BASE64_CHARS = 2_000_000; // ~1.5MB per photo after base64 overhead
@@ -133,6 +133,7 @@ export default async function handler(req, res) {
     const prompt = buildPrompt(req.body || {});
     const rawText = await callGemini(prompt, photos);
     const result = normalizeResult(extractJson(rawText));
+    await recordGeminiCallAndWarn(db); // operator-only heads-up near the free-tier cap; never shown to the customer
 
     return res.status(200).json({ ok: true, result, usage: { used: usageAfter, quota: MONTHLY_QUOTA } });
   } catch (err) {

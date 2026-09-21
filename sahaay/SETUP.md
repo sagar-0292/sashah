@@ -63,6 +63,8 @@ Since subscribers no longer bring their own key, you need one that the
    | `RAZORPAY_KEY_SECRET` | from step 3.3 (start with **test** key) |
    | `RAZORPAY_PLAN_ID` | from step 3.4 |
    | `RAZORPAY_WEBHOOK_SECRET` | from step 3.5 |
+   | `DAILY_GEMINI_CAP` | optional, defaults to `1400` — see "Staying on the free tier" below |
+   | `ALERT_WEBHOOK_URL` | optional — see below |
 
 4. Deploy.
 5. **Add the domain**: Project → **Settings → Domains → Add** → type `sahaay.online` (and `www.sahaay.online` if you want that too). Vercel will show you the exact DNS records to add — usually:
@@ -77,6 +79,31 @@ Since subscribers no longer bring their own key, you need one that the
 2. Confirm: after a successful test payment, the app unlocks and `/api/generate` actually returns a written listing.
 3. Confirm the webhook is reaching you: Razorpay Dashboard → Webhooks → your webhook → should show recent deliveries with a 200 response.
 4. Once that all works, swap `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` in Vercel to your **live** keys and redeploy.
+
+## Staying on the free tier (and knowing when to leave it)
+
+Per step 2's cost note, you can run entirely on Gemini's free tier while testing
+the waters — no billing account needed. The app tracks how many total Gemini
+calls happen across *all* subscribers each day (separate from each user's own
+monthly quota) and, purely for you, warns once it crosses 80% of a cap you set
+via `DAILY_GEMINI_CAP` (default 1400 — set it a bit under whatever Google's
+actual free-tier daily limit is for your model at [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit)).
+**Customers never see this** — it's not a rate limit shown in the app, just a
+signal to you.
+
+By default that warning only shows up in Vercel's function logs (Project →
+your deployment → **Logs**, search for `operator alert`). If you'd rather get
+pinged actively instead of checking logs, set `ALERT_WEBHOOK_URL` to any URL
+that accepts a POST with a JSON body — the easiest zero-signup option is
+[ntfy.sh](https://ntfy.sh): pick any unused topic name and use
+`https://ntfy.sh/your-chosen-topic-name` as the value, then install the ntfy
+app (or just open `https://ntfy.sh/your-chosen-topic-name` in a browser) to
+receive it as a push notification. Slack and Discord incoming webhook URLs
+also work directly.
+
+When you do start seeing that warning regularly, that's your cue to attach a
+Cloud Billing account to the Gemini API key in Google AI Studio — at that
+point you have enough paying subscribers that the AI cost is easily covered.
 
 ## What the app already does for you
 

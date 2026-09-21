@@ -93,3 +93,59 @@ export function isSubscriptionActive(data) {
   if (data.currentPeriodEnd && new Date(data.currentPeriodEnd) < new Date()) return false;
   return true;
 }
+
+/* ===================== Operator-only usage alert ===================== */
+// A self-imposed daily cap on total Gemini calls across ALL subscribers —
+// separate from each user's own monthly quota. If you're on Gemini's free
+// tier, its real daily limit is shared across your whole key regardless of
+// who's paying, so this exists purely so *you* find out you're close to it
+// before customers start seeing errors. Set a bit below Google's actual
+// limit to leave headroom. Customers never see any of this.
+export const DAILY_GEMINI_CAP = Number(process.env.DAILY_GEMINI_CAP || 1400);
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10); // UTC YYYY-MM-DD
+}
+
+async function notifyOperator(message) {
+  // Always visible in Vercel's function logs even with no webhook configured.
+  console.warn('[operator alert]', message);
+  const url = process.env.ALERT_WEBHOOK_URL;
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message, message }), // covers Slack/Discord ("text") and plain webhooks ("message")
+    });
+  } catch (err) {
+    console.error('notifyOperator webhook failed (non-fatal):', err);
+  }
+}
+
+// Call once per successful Gemini call. Increments today's global counter
+// and, the first time it crosses 80% of DAILY_GEMINI_CAP for the day, fires
+// one operator notification (never repeats until the next UTC day). Never
+// throws — a bookkeeping hiccup here must never break someone's listing.
+export async function recordGeminiCallAndWarn(db) {
+  try {
+    const day = todayKey();
+    const ref = db.doc(`system/dailyUsage_${day}`);
+    const { count, justCrossed } = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const data = snap.exists ? snap.data() : { count: 0, warned80: false };
+      const count = (data.count || 0) + 1;
+      const justCrossed = !data.warned80 && count >= DAILY_GEMINI_CAP * 0.8;
+      tx.set(ref, { day, count, warned80: data.warned80 || justCrossed }, { merge: true });
+      return { count, justCrossed };
+    });
+    if (justCrossed) {
+      await notifyOperator(
+        `SnapList: today's Gemini usage hit ${count}/${DAILY_GEMINI_CAP} (80%+ of your self-set daily cap). ` +
+        `If this keeps happening, it's time to attach billing to the Gemini key.`
+      );
+    }
+  } catch (err) {
+    console.error('recordGeminiCallAndWarn failed (non-fatal):', err);
+  }
+}
