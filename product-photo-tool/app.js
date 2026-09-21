@@ -349,6 +349,7 @@ async function generateListing() {
 
   const btn = $('#generateBtn');
   btn.disabled = true;
+  $('#outputPlaceholder').classList.add('hidden');
   $('#loadingCard').classList.remove('hidden');
   $('#resultsSection').classList.add('hidden');
   const loadingMsgs = ['Looking closely at your photos…', 'Spotting materials, colors & style…', 'Writing a title that stands out…', 'Polishing the description…'];
@@ -503,6 +504,7 @@ function initResultActions() {
     photos = [];
     renderPhotoGrid();
     $('#resultsSection').classList.add('hidden');
+    $('#outputPlaceholder').classList.remove('hidden');
     $('.generate-bar').classList.remove('hidden');
     $('#productName').value = '';
     $('#features').value = '';

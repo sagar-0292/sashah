@@ -84,14 +84,10 @@ textarea{resize:vertical;line-height:1.5;}
 }
 .icon-btn:active{transform:scale(0.94);}
 
-/* ===== Trust row ===== */
-.trust-row{
-  text-align:center;font-size:12px;color:var(--text3);letter-spacing:0.01em;
-  padding:0 20px 16px;
-}
-
 /* ===== Layout ===== */
 .content{flex:1;padding:0 16px calc(112px + var(--safe-bot));display:flex;flex-direction:column;gap:16px;}
+
+.output-placeholder{display:none;}
 
 /* ===== Intro ===== */
 .intro-card{
@@ -281,3 +277,45 @@ textarea{resize:vertical;line-height:1.5;}
 .app-footer .footer-dot{font-size:12px;color:var(--border2);}
 
 .hidden{display:none!important;}
+
+/* On mobile these wrappers must be invisible to layout — their children
+   flow directly into .content's flex column exactly as if the wrapper
+   didn't exist. display:contents does that. */
+.col-input-group,.col-output-group{display:contents;}
+
+/* ===== Desktop layout ===== */
+/* Below this width the app is the single-column, fixed-bottom-button mobile
+   flow above. Above it, it reads as a real website tool: a bordered header,
+   a wider frame, and a two-pane layout — inputs on the left, a live output
+   pane on the right that stays in view (position:sticky) while you edit.
+   Each side is grouped into a single flex container that IS one grid cell,
+   rather than giving every card its own grid-column — CSS Grid's default
+   auto-placement advances one row per DOM item regardless of column, so
+   interleaved single-item placement produces a staircase, not two aligned
+   columns.
+   This block must stay LAST in the file: at matching viewport widths it
+   needs to win over the unconditional rules above it (e.g. .generate-bar's
+   position:fixed) at equal specificity, and a media query alone doesn't
+   grant priority — source order still decides ties. */
+@media (min-width:900px){
+  .app-shell{max-width:1120px;}
+  .topbar{border-bottom:1px solid var(--border);}
+  .content{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:20px 36px;align-items:start;
+    padding:32px 32px 56px;
+  }
+  .col-input-group,.col-output-group{display:flex;flex-direction:column;gap:16px;}
+  .app-footer{grid-column:1 / -1;}
+
+  .generate-bar{position:static;background:none;padding:8px 0 0;}
+
+  .output-placeholder{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    min-height:360px;text-align:center;color:var(--text3);font-size:13.5px;padding:32px;
+  }
+  .output-placeholder-icon{font-size:26px;color:var(--accent);}
+
+  .results{position:sticky;top:24px;}
+  .loading-card{position:sticky;top:24px;}
+}

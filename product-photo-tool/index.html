@@ -47,9 +47,9 @@
     </nav>
   </header>
 
-  <p class="trust-row">Free AI key &middot; Works entirely on your phone &middot; No signup required</p>
-
   <main class="content" id="content">
+
+    <div class="col-input-group">
 
     <!-- ===== First-run intro ===== -->
     <section class="intro-card" id="introCard">
@@ -172,6 +172,17 @@
       <p class="generate-sub" id="generateSub">Add at least one photo to continue</p>
     </div>
 
+    </div><!-- /.col-input-group -->
+
+    <div class="col-output-group">
+
+    <!-- ===== Output placeholder (desktop only — see .output-placeholder in
+         style.css) ===== -->
+    <div class="card output-placeholder" id="outputPlaceholder">
+      <span class="output-placeholder-icon">✦</span>
+      <p>Your listing will appear here once you add a photo and generate.</p>
+    </div>
+
     <!-- ===== Loading ===== -->
     <section class="card loading-card hidden" id="loadingCard">
       <div class="spinner"></div>
@@ -237,6 +248,8 @@
         <ins class="adsbygoogle" id="adSlot" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
       </div>
     </section>
+
+    </div><!-- /.col-output-group -->
 
     <footer class="app-footer">
       <a href="how-it-works.html">How it works</a>
