@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SnapList">
+<meta name="theme-color" content="#F7F1E6">
+<meta name="description" content="Snap a product photo and get an AI-written title, description, bullet points and tags ready to paste into your online store listing. By Sahaay.">
+
+<title>SnapList by Sahaay – AI Product Description Writer</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Petit+Formal+Script&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+
+<!-- Razorpay Checkout widget -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+<script>
+  // If app.js's module import ever fails to load (e.g. a flaky network
+  // blocking Firebase's CDN), the whole module silently aborts and nothing
+  // renders. This plain (non-module) script always runs regardless, so it
+  // can catch that case and show something useful instead of a blank page.
+  window.__snaplistLoadTimer = setTimeout(function () {
+    var el = document.getElementById('loadFailBanner');
+    if (el) el.classList.remove('hidden');
+  }, 9000);
+</script>
+
+<div class="app-shell">
+
+  <!-- ===== Header ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">✦</span>
+      <span class="brand-name">Snap<span class="brand-script">List</span></span>
+    </div>
+    <nav class="topbar-actions">
+      <button class="nav-link-btn hidden" id="historyBtn">History</button>
+      <button class="nav-link-btn hidden" id="accountBtn">Account</button>
+    </nav>
+  </header>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span class="ticker-item">by sahaay</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">no api key needed</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">ready in seconds</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">made for mobile</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">by sahaay</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">no api key needed</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">ready in seconds</span><span class="ticker-sep">✦</span>
+      <span class="ticker-item">made for mobile</span><span class="ticker-sep">✦</span>
+    </div>
+  </div>
+
+  <main class="content" id="content">
+
+    <!-- ===== Auth screen ===== -->
+    <section class="auth-wrap" id="authScreen">
+      <div class="auth-card">
+        <h1>Welcome to <em class="script-accent">SnapList</em></h1>
+        <p class="auth-sub">Sign in to write AI-powered listings for your products. No API key needed — it's included in your subscription.</p>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tabSignIn">Sign in</button>
+          <button class="auth-tab" id="tabSignUp">Create account</button>
+        </div>
+
+        <div class="field">
+          <label for="authEmail">Email</label>
+          <input type="email" id="authEmail" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" autocomplete="current-password" placeholder="At least 6 characters">
+        </div>
+
+        <p class="auth-error" id="authError"></p>
+
+        <button class="btn btn-primary btn-block btn-lg" id="authSubmitBtn">Sign in</button>
+        <button class="btn-link hidden" id="forgotPasswordBtn">Forgot password?</button>
+      </div>
+    </section>
+
+    <!-- ===== Paywall screen ===== -->
+    <section class="hidden" id="paywallScreen" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="plan-card">
+        <span class="plan-name">SnapList Monthly</span>
+        <div class="plan-price">₹<span id="planPriceValue">299</span><sub>/ month</sub></div>
+        <ul class="plan-features">
+          <li>Up to <span id="planQuotaValue">200</span> AI-written listings a month</li>
+          <li>No API key or setup — it just works</li>
+          <li>Title, description, bullets &amp; tags per photo</li>
+          <li>Cancel anytime, no long-term lock-in</li>
+        </ul>
+        <button class="btn btn-primary btn-block btn-lg" id="subscribeBtn">Subscribe now</button>
+        <p class="hint" id="paywallNote"></p>
+      </div>
+      <button class="btn-link" id="paywallSignOutBtn">Sign out</button>
+    </section>
+
+    <!-- ===== Main app screen ===== -->
+    <div class="hidden" id="appScreen" style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Usage -->
+      <section class="card" id="usageCard">
+        <div class="card-head">
+          <h2>This month</h2>
+          <span class="hint" id="usageText">0 / 200 used</span>
+        </div>
+        <div class="usage-bar-track"><div class="usage-bar-fill" id="usageBarFill" style="width:0%"></div></div>
+      </section>
+
+      <!-- Step 1: Photos -->
+      <section class="card" id="photoCard">
+        <div class="card-head">
+          <h2><span class="step-num">1</span> Add product photos</h2>
+          <span class="hint">Up to 4 · clear background helps most</span>
+        </div>
+
+        <div class="photo-grid" id="photoGrid">
+          <label class="photo-add" id="photoAddTile">
+            <input type="file" id="cameraInput" accept="image/*" multiple class="visually-hidden">
+            <span class="photo-add-icon">＋</span>
+            <span class="photo-add-label">Add photo</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Step 2: Details -->
+      <section class="card" id="detailsCard">
+        <div class="card-head collapsible" id="detailsToggle">
+          <h2><span class="step-num">2</span> Tell it about the product <span class="optional-tag">optional</span></h2>
+          <span class="chevron open" id="detailsChevron">▾</span>
+        </div>
+
+        <div class="card-body" id="detailsBody">
+          <div class="field">
+            <label for="productName">Product name / brand (if known)</label>
+            <input type="text" id="productName" placeholder="e.g. Kanpur Leather Co. Messenger Bag">
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="category">Category</label>
+              <select id="category">
+                <option value="">Let AI decide</option>
+                <option>Fashion &amp; Apparel</option>
+                <option>Footwear</option>
+                <option>Jewelry &amp; Accessories</option>
+                <option>Home &amp; Kitchen</option>
+                <option>Furniture</option>
+                <option>Beauty &amp; Personal Care</option>
+                <option>Electronics</option>
+                <option>Toys &amp; Games</option>
+                <option>Sports &amp; Outdoors</option>
+                <option>Arts, Crafts &amp; Handmade</option>
+                <option>Grocery &amp; Food</option>
+                <option>Pet Supplies</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="platform">Where you're selling</label>
+              <select id="platform">
+                <option value="a general online store">General / My website</option>
+                <option value="Amazon">Amazon</option>
+                <option value="Etsy">Etsy</option>
+                <option value="Shopify">Shopify</option>
+                <option value="eBay">eBay</option>
+                <option value="Instagram / WhatsApp catalog">Instagram / WhatsApp</option>
+                <option value="Flipkart">Flipkart</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="features">Key details, materials, size, price range… (anything the photo can't show)</label>
+            <textarea id="features" rows="3" placeholder="e.g. Genuine buffalo leather, hand-stitched, fits a 14&quot; laptop, available in tan &amp; black, ₹2,499"></textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="tone">Tone of voice</label>
+              <select id="tone">
+                <option>Friendly &amp; persuasive</option>
+                <option>Professional</option>
+                <option>Luxury &amp; premium</option>
+                <option>Playful &amp; fun</option>
+                <option>Minimal &amp; to the point</option>
+                <option>Warm &amp; handmade</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="length">Description length</label>
+              <select id="length">
+                <option>Standard</option>
+                <option>Short &amp; punchy</option>
+                <option>Detailed</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="switch-row">
+            <span>Use emojis in the listing</span>
+            <input type="checkbox" id="useEmojis">
+            <span class="switch"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Generate -->
+      <div class="generate-bar">
+        <button class="btn btn-primary btn-block btn-lg" id="generateBtn" disabled>
+          <span id="generateBtnLabel">Write my listing</span>
+        </button>
+        <p class="generate-sub" id="generateSub">Add at least one photo to continue</p>
+      </div>
+
+      <!-- Loading -->
+      <section class="card loading-card hidden" id="loadingCard">
+        <div class="spinner"></div>
+        <p id="loadingText">Looking closely at your photos…</p>
+      </section>
+
+      <!-- Results -->
+      <section class="results hidden" id="resultsSection">
+
+        <div class="card result-card">
+          <div class="card-head">
+            <h2>Listing title</h2>
+            <button class="chip-btn copy-btn" data-copy="#resTitle">Copy</button>
+          </div>
+          <input type="text" id="resTitle" class="result-title-input">
+        </div>
+
+        <div class="card result-card">
+          <div class="card-head">
+            <h2>Short description</h2>
+            <button class="chip-btn copy-btn" data-copy="#resShort">Copy</button>
+          </div>
+          <textarea id="resShort" rows="2" class="result-textarea"></textarea>
+        </div>
+
+        <div class="card result-card">
+          <div class="card-head">
+            <h2>Full description</h2>
+            <button class="chip-btn copy-btn" data-copy="#resLong">Copy</button>
+          </div>
+          <textarea id="resLong" rows="8" class="result-textarea"></textarea>
+        </div>
+
+        <div class="card result-card">
+          <div class="card-head">
+            <h2>Highlights</h2>
+            <button class="chip-btn copy-btn" data-copy-list="#resBullets">Copy</button>
+          </div>
+          <ul class="bullet-list" id="resBullets"></ul>
+        </div>
+
+        <div class="card result-card">
+          <div class="card-head">
+            <h2>Tags &amp; keywords</h2>
+            <button class="chip-btn copy-btn" data-copy-tags="#resTags">Copy</button>
+          </div>
+          <div class="tag-list" id="resTags"></div>
+          <p class="hint" id="resCategoryHint"></p>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn btn-secondary" id="copyAllBtn">Copy everything</button>
+          <button class="btn btn-secondary" id="downloadBtn">Download .txt</button>
+          <button class="btn btn-secondary" id="regenerateBtn">Regenerate</button>
+          <button class="btn-link" id="startOverBtn">Start a new listing</button>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast hidden" id="toast"></div>
+
+  <!-- ===== Account Sheet ===== -->
+  <div class="sheet-overlay hidden" id="accountOverlay">
+    <div class="sheet" id="accountSheet">
+      <div class="sheet-handle"></div>
+      <h2>Your account</h2>
+
+      <div>
+        <div class="account-row"><span class="a-label">Email</span><span class="a-value" id="acctEmail">—</span></div>
+        <div class="account-row"><span class="a-label">Plan</span><span class="a-value" id="acctPlan">—</span></div>
+        <div class="account-row"><span class="a-label">Renews / ends</span><span class="a-value" id="acctRenews">—</span></div>
+        <div class="account-row"><span class="a-label">Used this month</span><span class="a-value" id="acctUsage">—</span></div>
+      </div>
+
+      <button class="btn-link btn-link-danger hidden" id="cancelSubBtn">Cancel subscription</button>
+      <button class="btn-link" id="signOutBtn">Sign out</button>
+      <button class="btn-link" id="closeAccountBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- ===== Load-failure fallback ===== -->
+  <!-- Shown only if app.js never got a chance to run (see the inline script
+       above) — most often a network problem loading Firebase's CDN script. -->
+  <div class="hidden" id="loadFailBanner" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;">
+    <p style="font-family:'Playfair Display',Georgia,serif;font-size:19px;">Having trouble loading SnapList</p>
+    <p style="color:var(--text2);font-size:14px;max-width:280px;">Check your internet connection, then try again.</p>
+    <button class="btn btn-primary" onclick="window.location.reload()">Reload</button>
+  </div>
+
+  <!-- ===== History Sheet ===== -->
+  <div class="sheet-overlay hidden" id="historyOverlay">
+    <div class="sheet" id="historySheet">
+      <div class="sheet-handle"></div>
+      <h2>Recent listings</h2>
+      <p class="sheet-desc">Saved on this device only. Tap one to reopen it.</p>
+      <div id="historyList" class="history-list"></div>
+      <button class="btn-link btn-link-danger" id="clearHistoryBtn">Clear all history</button>
+      <button class="btn-link" id="closeHistoryBtn">Close</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

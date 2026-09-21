@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/generate.js": { "maxDuration": 30 },
+    "api/create-subscription.js": { "maxDuration": 10 },
+    "api/razorpay-webhook.js": { "maxDuration": 10 },
+    "api/me.js": { "maxDuration": 10 },
+    "api/cancel-subscription.js": { "maxDuration": 10 }
+  }
+}

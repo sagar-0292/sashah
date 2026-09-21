@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The frontend never talks to Firestore directly — only this backend's
+    // Admin SDK does (via /api/*), and the Admin SDK bypasses these rules
+    // entirely. So the correct, safest rule here is simply: deny everyone.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
