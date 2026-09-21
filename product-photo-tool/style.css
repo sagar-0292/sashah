@@ -277,4 +277,16 @@ textarea{resize:vertical;line-height:1.5;}
 .history-item .hi-date{font-size:11px;color:var(--text3);}
 .history-empty{color:var(--text3);font-size:14px;text-align:center;padding:20px 0;}
 
+/* ===== Ad slot ===== */
+.ad-slot{
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-md);
+  padding:10px;display:flex;flex-direction:column;gap:6px;align-items:center;
+  min-height:60px;justify-content:center;
+}
+.ad-slot-label{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);align-self:flex-start;}
+
+/* ===== Footer ===== */
+.app-footer{padding:10px 16px calc(24px + var(--safe-bot));text-align:center;}
+.app-footer a{font-size:12px;color:var(--text3);text-decoration:underline;}
+
 .hidden{display:none!important;}

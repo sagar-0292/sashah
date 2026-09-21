@@ -406,6 +406,7 @@ function showResult(result) {
   $('#resultsSection').classList.remove('hidden');
   $('.generate-bar').classList.add('hidden');
   $('#resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  initAds(); // only meaningful now the ad slot is actually visible; no-ops after the first call
 }
 
 function escapeHtml(str) {
@@ -706,6 +707,39 @@ function initServiceWorker() {
   navigator.serviceWorker.register('sw.js').then((reg) => {
     reg.update().catch(() => {});
   }).catch(() => {});
+}
+
+/* ===================== Ads (Google AdSense) ===================== */
+// Configure window.ADSENSE_CLIENT_ID / ADSENSE_SLOT_ID in index.html once
+// you're approved — see README.md. Left unconfigured, this does nothing:
+// no script load, no ad box, no console noise.
+let adsInitialized = false;
+function initAds() {
+  if (adsInitialized) return; // AdSense doesn't support pushing twice into the same <ins>
+  const clientId = window.ADSENSE_CLIENT_ID || '';
+  const slotId = window.ADSENSE_SLOT_ID || '';
+  const configured = clientId && slotId && !clientId.includes('REPLACE_ME') && !slotId.includes('REPLACE_ME');
+  if (!configured) return;
+  adsInitialized = true;
+
+  const ins = document.getElementById('adSlot');
+  ins.setAttribute('data-ad-client', clientId);
+  ins.setAttribute('data-ad-slot', slotId);
+  document.getElementById('adSlotWrap').classList.remove('hidden');
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(clientId)}`;
+  script.crossOrigin = 'anonymous';
+  script.onload = () => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense render failed:', err);
+    }
+  };
+  script.onerror = () => console.error('AdSense script failed to load.');
+  document.head.appendChild(script);
 }
 
 /* ===================== Init ===================== */

@@ -22,6 +22,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Petit+Formal+Script&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
+
+<!-- Google AdSense — see README.md "Enabling ads" for setup. Left
+     unconfigured (placeholder IDs) until you've been approved; app.js only
+     loads AdSense's script and shows the ad slot once real IDs are set here. -->
+<script>
+  window.ADSENSE_CLIENT_ID = 'ca-pub-REPLACE_ME';
+  window.ADSENSE_SLOT_ID = 'REPLACE_ME';
+</script>
 </head>
 <body>
 
@@ -231,9 +239,21 @@
         <button class="btn btn-secondary" id="regenerateBtn">Regenerate</button>
         <button class="btn-link" id="startOverBtn">Start a new listing</button>
       </div>
+
+      <!-- Ad slot: only shown once a listing is generated (not on the core
+           upload/generate flow), and only if a real AdSense id is configured
+           above — see initAds() in app.js. -->
+      <div class="ad-slot hidden" id="adSlotWrap">
+        <span class="ad-slot-label">Advertisement</span>
+        <ins class="adsbygoogle" id="adSlot" style="display:block" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      </div>
     </section>
 
   </main>
+
+  <footer class="app-footer">
+    <a href="privacy.html">Privacy</a>
+  </footer>
 
   <!-- ===== Toast ===== -->
   <div class="toast hidden" id="toast"></div>
