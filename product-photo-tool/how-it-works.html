@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How it works – SnapList</title>
+<meta name="description" content="How SnapList turns a product photo into a ready-to-publish listing, step by step.">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Petit+Formal+Script&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  .doc{max-width:640px;margin:0 auto;padding:32px 20px calc(48px + var(--safe-bot));display:flex;flex-direction:column;gap:16px;}
+  .doc h1{font-size:26px;margin-bottom:2px;}
+  .doc > p.lead{color:var(--text2);font-size:14.5px;line-height:1.65;margin-bottom:8px;}
+  .doc h2.section-title{font-size:17px;margin-top:14px;}
+  .doc p,.doc li{color:var(--text2);font-size:14.5px;line-height:1.7;margin-bottom:12px;}
+  .doc a{color:var(--accent2);font-weight:600;}
+  .back-link{display:inline-block;font-size:13px;color:var(--text2);}
+  .step-card p{margin-top:2px;}
+  .faq-item{padding:14px 0;border-top:1px solid var(--border);}
+  .faq-item:first-child{border-top:none;}
+  .faq-q{font-weight:600;color:var(--text);font-size:14.5px;margin-bottom:4px;font-family:'Playfair Display',Georgia,serif;}
+  .doc-footer{margin-top:12px;padding-top:20px;border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;}
+  .doc-footer a{font-size:13px;}
+</style>
+</head>
+<body>
+<div class="doc">
+  <a class="back-link" href="index.html">← Back to SnapList</a>
+  <h1>How <em class="script-accent">SnapList</em> works</h1>
+  <p class="lead">Four steps, no design or writing experience needed. Here's exactly what happens at each one.</p>
+
+  <div class="card step-card">
+    <div class="card-head"><h2><span class="step-num">1</span> Add a photo</h2></div>
+    <p>Tap the photo tile and either take a picture or choose one from your gallery — up to four angles of the same item. A clean background helps the AI see the product clearly, but it isn't required.</p>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-head"><h2><span class="step-num">2</span> Tell it more <span class="optional-tag">optional</span></h2></div>
+    <p>Add anything the photo can't show — material, size, price, brand — plus the tone you want and where you're selling. Skipping this is fine; the AI will describe what it can see and stay general about the rest.</p>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-head"><h2><span class="step-num">3</span> The AI writes your listing</h2></div>
+    <p>Your photo(s) and notes are sent directly from your device to the AI provider you connected in Settings. It looks at the image and writes a title, a short and a long description, highlight bullets, and search tags — all in one pass, usually within a few seconds.</p>
+  </div>
+
+  <div class="card step-card">
+    <div class="card-head"><h2><span class="step-num">4</span> Copy, edit, or reuse it</h2></div>
+    <p>Every field is editable before you use it. Copy individual sections or everything at once, download it as a text file, or come back to it later from the History menu — it's saved on this device.</p>
+  </div>
+
+  <h2 class="section-title">Which AI writes the listing?</h2>
+  <p>Whichever provider you connect in Settings — Google Gemini or OpenRouter, both offer a genuinely free tier. You paste your own key once; SnapList never sees or stores it anywhere except your browser's local storage, and every request goes straight from your device to that provider, not through a server of ours.</p>
+
+  <h2 class="section-title">Frequently asked</h2>
+  <div>
+    <div class="faq-item">
+      <div class="faq-q">Do I need to pay for anything?</div>
+      <p>No. SnapList itself is free, and the AI providers it connects to both offer free API keys with no credit card required. See Settings in the app for step-by-step instructions on getting one.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is my data private?</div>
+      <p>Yes — there's no server of ours in the middle. Full detail is on the <a href="privacy.html">Privacy Policy</a> page.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Which marketplaces does this work for?</div>
+      <p>Any of them — Amazon, Etsy, Flipkart, Shopify, eBay, Instagram/WhatsApp catalogues, or your own website. The listing is just plain text you copy in; nothing is tied to a specific platform.</p>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What if I don't have an API key yet?</div>
+      <p>Open Settings inside the app — it links directly to where to get a free one and walks through the exact steps for whichever provider you pick.</p>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <a href="about.html">About</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="index.html">Open SnapList</a>
+  </div>
+</div>
+</body>
+</html>

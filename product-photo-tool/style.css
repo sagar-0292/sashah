@@ -84,21 +84,11 @@ textarea{resize:vertical;line-height:1.5;}
 }
 .icon-btn:active{transform:scale(0.94);}
 
-/* ===== Ticker ===== */
-/* Always a fixed black band regardless of light/dark mode, like a printed
-   ribbon — it shouldn't invert when --ink/--surface flip for dark mode. */
-.ticker{
-  background:#171513;overflow:hidden;white-space:nowrap;
-  padding:11px 0;margin-bottom:18px;
+/* ===== Trust row ===== */
+.trust-row{
+  text-align:center;font-size:12px;color:var(--text3);letter-spacing:0.01em;
+  padding:0 20px 16px;
 }
-.ticker-track{display:inline-flex;align-items:center;animation:tickerScroll 22s linear infinite;}
-.ticker-item{
-  font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;
-  font-size:14px;letter-spacing:0.02em;padding:0 18px;color:#F3EADD;
-}
-.ticker-sep{color:var(--accent);font-size:11px;}
-@keyframes tickerScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-@media (prefers-reduced-motion: reduce){.ticker-track{animation:none;}}
 
 /* ===== Layout ===== */
 .content{flex:1;padding:0 16px calc(112px + var(--safe-bot));display:flex;flex-direction:column;gap:16px;}
@@ -286,7 +276,8 @@ textarea{resize:vertical;line-height:1.5;}
 .ad-slot-label{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);align-self:flex-start;}
 
 /* ===== Footer ===== */
-.app-footer{padding:10px 16px calc(24px + var(--safe-bot));text-align:center;}
+.app-footer{padding:10px 16px calc(24px + var(--safe-bot));text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
 .app-footer a{font-size:12px;color:var(--text3);text-decoration:underline;}
+.app-footer .footer-dot{font-size:12px;color:var(--border2);}
 
 .hidden{display:none!important;}
