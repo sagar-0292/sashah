@@ -8,9 +8,23 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="SnapList">
 <meta name="theme-color" content="#F7F1E6">
-<meta name="description" content="Snap a product photo and get an AI-written title, description, bullet points and tags ready to paste into your online store listing.">
+<meta name="description" content="Turn a product photo into a ready-to-publish listing in seconds. Free AI-written titles, descriptions, bullet points and tags for Amazon, Etsy, Shopify, eBay and Instagram sellers — no signup, no credit card.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://sagar-0292.github.io/sashah/product-photo-tool/">
 
-<title>SnapList – AI Product Description Writer</title>
+<title>SnapList by Sahaay – Free AI Product Description Generator</title>
+
+<!-- Open Graph / social sharing -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SnapList by Sahaay">
+<meta property="og:title" content="SnapList by Sahaay – Free AI Product Description Generator">
+<meta property="og:description" content="Turn a product photo into a ready-to-publish listing in seconds. Free AI-written titles, descriptions, bullet points and tags for Amazon, Etsy, Shopify, eBay and Instagram sellers.">
+<meta property="og:url" content="https://sagar-0292.github.io/sashah/product-photo-tool/">
+<meta property="og:image" content="https://sagar-0292.github.io/sashah/product-photo-tool/icons/icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SnapList by Sahaay – Free AI Product Description Generator">
+<meta name="twitter:description" content="Turn a product photo into a ready-to-publish listing in seconds — free, no signup.">
+<meta name="twitter:image" content="https://sagar-0292.github.io/sashah/product-photo-tool/icons/icon-512.png">
 
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
@@ -22,6 +36,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Petit+Formal+Script&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
+
+<!-- Structured data — helps search engines understand what this page is
+     and can surface it as a rich result (app name, category, "free"). -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SnapList by Sahaay",
+  "alternateName": "SnapList",
+  "url": "https://sagar-0292.github.io/sashah/product-photo-tool/",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any (Progressive Web App)",
+  "description": "Turn a product photo into a ready-to-publish listing — AI-written title, description, bullet points and tags for Amazon, Etsy, Shopify, eBay and Instagram sellers.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Sahaay"
+  }
+}
+</script>
 
 <!-- Google AdSense — see README.md "Enabling ads" for setup. Left
      unconfigured (placeholder IDs) until you've been approved; app.js only
@@ -39,7 +77,10 @@
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">✦</span>
-      <span class="brand-name">Snap<span class="brand-script">List</span></span>
+      <div class="brand-text">
+        <span class="brand-name">Snap<span class="brand-script">List</span></span>
+        <span class="brand-by">by Sahaay</span>
+      </div>
     </div>
     <nav class="topbar-actions">
       <button class="nav-link-btn" id="historyBtn" title="Recent listings" aria-label="Recent listings">History</button>
@@ -269,7 +310,7 @@
     <div class="sheet" id="settingsSheet">
       <div class="sheet-handle"></div>
       <h2>AI provider settings</h2>
-      <p class="sheet-desc">SnapList calls the AI provider directly from your phone or browser. Your API key is saved only in this device's local storage — it is never sent anywhere except the provider you choose below.</p>
+      <p class="sheet-desc">SnapList by Sahaay calls the AI provider directly from your phone or browser. Your API key is saved only in this device's local storage — it is never sent anywhere except the provider you choose below.</p>
 
       <div class="field">
         <label for="provider">AI provider</label>

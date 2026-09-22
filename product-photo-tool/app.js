@@ -1,7 +1,7 @@
 'use strict';
 
 /* =========================================================================
-   SnapList — AI product photo → listing description writer
+   SnapList by Sahaay — AI product photo → listing description writer
    All state lives in localStorage on this device. The only network calls
    are direct, from this device to whichever AI provider the user picked,
    using the API key the user pasted in. Nothing is ever sent to a server
@@ -310,7 +310,7 @@ async function callOpenRouter(prompt, settings, withJsonMode = true) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${settings.apiKey}`,
       'HTTP-Referer': location.origin,
-      'X-Title': 'SnapList',
+      'X-Title': 'SnapList by Sahaay',
     },
     body: JSON.stringify(body),
   });

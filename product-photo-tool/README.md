@@ -1,4 +1,4 @@
-# 📸 SnapList — AI Product Description Writer
+# 📸 SnapList by Sahaay — AI Product Description Writer
 
 A mobile-friendly Progressive Web App: take or upload a photo of a product and get a ready-to-publish **title, short description, full description, bullet highlights and tags** for your online listing — written by AI.
 
@@ -15,7 +15,7 @@ Fully self-contained; independent of the other project(s) in this repo.
 
 You bring your own **free** API key — nothing is billed, no credit card required, and the key is stored only in your browser's local storage (never sent anywhere but the provider you choose).
 
-- **Google Gemini** (recommended) — get a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Generous daily free quota for `gemini-2.0-flash` / `gemini-1.5-flash`.
+- **Google Gemini** (recommended) — get a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Generous daily free quota for `gemini-3.6-flash` and other current Flash models (selectable in Settings).
 - **OpenRouter** — get a free key at [openrouter.ai/keys](https://openrouter.ai/keys). Gives access to several `:free`-tier vision models (Gemini, Qwen-VL, Llama Vision, Mistral) through one key.
 
 Set your provider and key from the ⚙️ Settings sheet inside the app — it includes step-by-step instructions and a "Test connection" button.
@@ -46,6 +46,23 @@ The app can show a single, tasteful Google AdSense ad — only after a listing i
 3. Open `index.html`, find the `ADSENSE_CLIENT_ID` / `ADSENSE_SLOT_ID` placeholders near the top of `<head>`, and replace them with your real values.
 4. **`ads.txt`**: this file needs to live at your domain's *root* (e.g. `https://sagar-0292.github.io/ads.txt`), not inside `/product-photo-tool/`. The one in this folder is a placeholder with the exact line to publish there — it only matters once this tool has its own domain/root, otherwise Google's crawler won't find it at the sub-path.
 5. AdSense also requires a linked privacy policy — `privacy.html` in this folder already covers the standard ad/cookie disclosures Google asks for; update the contact section with your real details.
+
+## Getting found in search (SEO)
+
+Since the plan is free-with-ads first to see real demand before any paywall, organic search traffic is the main thing worth investing in — it's both the ad revenue and the demand signal. What's already in place:
+
+- Unique `<title>`/meta description, Open Graph and Twitter Card tags, and a canonical URL on every page.
+- `SoftwareApplication` structured data on the home page, `FAQPage` structured data on `how-it-works.html` (Google can show these as rich results — an FAQ dropdown directly in search results, for instance), and `AboutPage`/`Organization` data on `about.html`.
+- `sitemap.xml` listing all four pages.
+- `robots.txt` — **note its limitation**: crawlers only ever check this file at your domain's true root (`https://sagar-0292.github.io/robots.txt`), never at this sub-path. The copy here is a reference/placeholder only. What actually controls indexing today is each page's `<meta name="robots" content="index, follow">` tag, which works regardless of location — so you don't need the root-level file to be indexed, only if you later want to *block* something.
+
+To actually get indexed and start showing up in results:
+
+1. Go to [Google Search Console](https://search.google.com/search-console), add a property using **URL prefix** (not Domain) with the value `https://sagar-0292.github.io/sashah/product-photo-tool/`. URL-prefix properties can be verified with an HTML tag or file at that exact path — unlike Domain properties, they don't need root-level DNS access you don't have.
+2. Verify using the **HTML tag** method: it gives you a `<meta name="google-site-verification" ...>` tag — add it to `index.html`'s `<head>` (any page works, but the home page is simplest).
+3. Once verified, go to **Sitemaps** in the left nav and submit `sitemap.xml`.
+4. Under **URL Inspection**, request indexing for `index.html` manually to speed up the first crawl instead of waiting for Google to discover it on its own.
+5. If this ever moves to a custom domain, update every `canonical`/`og:url`/JSON-LD `url` field in these files (currently hardcoded to the GitHub Pages URL) and redo the Search Console verification for the new domain.
 
 ## Privacy
 
