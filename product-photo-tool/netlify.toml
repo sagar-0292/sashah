@@ -1,0 +1,10 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Keeps the frontend's URL (/api/free-generate) stable regardless of the
+# underlying Netlify Functions path.
+[[redirects]]
+  from = "/api/free-generate"
+  to = "/.netlify/functions/free-generate"
+  status = 200

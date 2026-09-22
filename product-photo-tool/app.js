@@ -71,16 +71,17 @@ function hasKey() {
   return !!getSettings().apiKey.trim();
 }
 
-// The free, no-signup AI proxy (see sahaay/api/free-generate.js). Configured
-// via window.FREE_API_BASE in index.html; left as the placeholder, the app
-// falls back to requiring visitors to bring their own key, exactly as before.
-function freeApiConfigured() {
-  const base = window.FREE_API_BASE || '';
-  return !!base && !base.includes('REPLACE_ME');
+// The free, no-signup AI proxy (see netlify/functions/free-generate.js).
+// Defaults to this same site's /api/free-generate; set window.FREE_API_BASE
+// in index.html only if that proxy lives on a different domain.
+function freeApiBase() {
+  return window.FREE_API_BASE || '';
 }
-// Can the user generate right now, one way or another?
+// Every visitor can generate by default (the free proxy is tried first when
+// no personal key is set) — a key is only an optional upgrade for unlimited,
+// fully private use, never a requirement to get started.
 function canGenerate() {
-  return hasKey() || freeApiConfigured();
+  return true;
 }
 
 /* ===================== Intro / first run ===================== */
@@ -99,8 +100,13 @@ function initIntro() {
   });
 }
 
+// Set true only when the shared free proxy itself is unreachable/broken
+// (not a normal per-visitor daily quota hit, which already shows its own
+// message) — that's the one case where adding a personal key is worth
+// surfacing as a banner instead of just failing this one generation.
+let freeProxyBroken = false;
 function refreshKeyBanner() {
-  $('#noKeyBanner').classList.toggle('hidden', canGenerate());
+  $('#noKeyBanner').classList.toggle('hidden', hasKey() || !freeProxyBroken);
 }
 
 /* ===================== Photo handling ===================== */
@@ -169,15 +175,11 @@ function updateGenerateState() {
   if (photos.length === 0) {
     btn.disabled = true;
     sub.textContent = 'Add at least one photo to continue';
-  } else if (!canGenerate()) {
-    btn.disabled = true;
-    sub.textContent = 'Add your free AI key in Settings to continue';
   } else {
     btn.disabled = false;
-    const usingFreeTier = !hasKey() && freeApiConfigured();
-    sub.textContent = usingFreeTier
-      ? `${photos.length} photo${photos.length > 1 ? 's' : ''} ready · using shared free AI`
-      : `${photos.length} photo${photos.length > 1 ? 's' : ''} ready`;
+    sub.textContent = hasKey()
+      ? `${photos.length} photo${photos.length > 1 ? 's' : ''} ready`
+      : `${photos.length} photo${photos.length > 1 ? 's' : ''} ready · using shared free AI`;
   }
   refreshKeyBanner();
 }
@@ -366,7 +368,7 @@ function freeProxyFields() {
 }
 
 async function callFreeProxy() {
-  const url = `${window.FREE_API_BASE}/api/free-generate`;
+  const url = `${freeApiBase()}/api/free-generate`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -377,17 +379,15 @@ async function callFreeProxy() {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) {
+    if (res.status !== 429) { freeProxyBroken = true; refreshKeyBanner(); }
     throw new Error(data.error || `The free AI service is having issues right now (${res.status}). Please try again, or add your own free key in Settings.`);
   }
+  freeProxyBroken = false;
+  refreshKeyBanner();
   return data.result;
 }
 
 async function generateListing() {
-  if (!canGenerate()) {
-    toast('Add your free AI API key in Settings first.', 'error');
-    openSettings();
-    return;
-  }
   if (photos.length === 0) {
     toast('Add a product photo first.', 'error');
     return;

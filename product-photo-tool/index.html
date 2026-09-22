@@ -70,13 +70,13 @@
 </script>
 
 <!-- Free-tier AI proxy — see README.md "No-key free tier" for setup.
-     Points at the sahaay Vercel deployment's /api/free-generate endpoint,
-     which holds the operator's AI key server-side (never shipped to this
-     page) and rate-limits each visitor. Left unconfigured (placeholder),
-     the app falls back to requiring visitors to bring their own free key,
-     exactly as before. -->
+     By default the app calls /api/free-generate on this SAME site (the
+     Netlify Function in netlify/functions/free-generate.js, which holds
+     the operator's AI key server-side and is never shipped to this page).
+     Only set FREE_API_BASE if that proxy lives on a different domain than
+     this page (e.g. the older sahaay/Vercel deployment). -->
 <script>
-  window.FREE_API_BASE = 'REPLACE_ME'; // e.g. 'https://your-sahaay-deployment.vercel.app'
+  window.FREE_API_BASE = ''; // leave blank to use this site's own /api/free-generate
 </script>
 </head>
 <body>
@@ -111,9 +111,10 @@
       <button class="btn-link" id="introSetupBtn">Want unlimited use? Add your own free AI key</button>
     </section>
 
-    <!-- ===== Key missing banner ===== -->
+    <!-- ===== Optional own-key upsell banner (only ever shown if the shared
+         free tier itself is unavailable) ===== -->
     <div class="banner banner-warn hidden" id="noKeyBanner">
-      <span>Add a free AI key to start generating descriptions.</span>
+      <span>The free shared AI is temporarily unavailable. Add your own free key to keep going.</span>
       <button class="btn btn-sm" id="noKeyBannerBtn">Add key</button>
     </div>
 

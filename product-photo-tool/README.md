@@ -13,15 +13,18 @@ Fully self-contained; independent of the other project(s) in this repo.
 
 ## No-key free tier (default experience)
 
-Out of the box, visitors can generate listings immediately with **no signup and no API key** — the request goes to a small serverless proxy that holds an operator-owned AI key server-side and forwards the request, so the key is never shipped to the browser. Each visitor gets a modest number of free generations per day (identified only by a salted, one-way hash of their IP — never stored raw), enough to genuinely try the tool.
+Out of the box, visitors can generate listings immediately with **no signup and no API key** — the request goes to a Netlify Function (`netlify/functions/free-generate.js`) that holds an operator-owned Gemini key server-side and forwards the request, so the key is never shipped to the browser. Each visitor gets a modest number of free generations per day (identified only by a salted, one-way hash of their IP, stored in Netlify Blobs — never a raw IP), enough to genuinely try the tool. The frontend calls this by default (`/api/free-generate`, same site) — nothing to configure unless the proxy is hosted elsewhere.
 
-This is powered by the `sahaay/api/free-generate.js` endpoint in this repo (see `sahaay/SETUP.md`) — a sibling project, deployed separately on Vercel. To activate it here:
+**To turn it on, deploy this folder to Netlify as a Git-connected site** (not a drag-and-drop upload — drag-and-drop only publishes static files, it skips the Functions folder):
 
-1. Deploy the `sahaay` folder to Vercel per its own `SETUP.md` (you need this anyway if you ever turn on the paid tier — this reuses the same deployment).
-2. Open this folder's `index.html`, find `window.FREE_API_BASE` near the top of `<head>`, and set it to your deployed URL (e.g. `https://your-sahaay-deployment.vercel.app`).
-3. Redeploy. The intro card and generate button will automatically switch to "no key needed" once `FREE_API_BASE` is a real URL — until then, the app quietly falls back to requiring a key, exactly as it did before this feature existed.
+1. [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project** → connect this GitHub repo.
+2. Set **Base directory** to `product-photo-tool`. Netlify reads `netlify.toml` in this folder automatically (functions directory, the `/api/free-generate` redirect) and `package.json` to install the one dependency (`@netlify/blobs`, which is a built-in Netlify primitive — no separate account needed).
+3. **Site configuration → Environment variables → Add a variable**: `GEMINI_API_KEY` = your Gemini key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey). This is what makes it "default" — it's never in any file in this repo, only in Netlify's dashboard, so it's never visible to a visitor or in view-source.
+4. Deploy. That's the whole setup — no Firebase, no Vercel.
 
-**Cost control**: the per-visitor daily cap is `FREE_DAILY_IP_LIMIT` (set on the `sahaay` Vercel project, default 8/day). The same operator-only usage alert described in `sahaay/SETUP.md` covers this endpoint too — it doesn't distinguish free-tier from paid traffic, since both draw on the same Gemini key and the same daily quota concern.
+**Cost control**: the per-visitor daily cap is `FREE_DAILY_IP_LIMIT` (env var, default 8/day). Optionally set `IP_HASH_SALT` to any random string (used only to hash visitor IPs). Watch total usage against Gemini's free-tier daily limit at [aistudio.google.com/rate-limit](https://aistudio.google.com/rate-limit); attach Cloud Billing to the Gemini key once you're consistently near it.
+
+(An older, Firebase+Vercel-based version of this same proxy still exists at `sahaay/api/free-generate.js` for the separate paid-subscription product in this repo — the Netlify Function above is the one this tool actually uses by default now.)
 
 ## Bringing your own key (optional, unlimited & fully private)
 

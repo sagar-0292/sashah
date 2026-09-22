@@ -1,0 +1,8 @@
+{
+  "name": "snaplist-by-sahaay",
+  "private": true,
+  "description": "SnapList by Sahaay — free AI product listing writer (static site + Netlify Function proxy)",
+  "dependencies": {
+    "@netlify/blobs": "^11.0.0"
+  }
+}
