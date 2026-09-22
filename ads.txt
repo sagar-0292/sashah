@@ -1,0 +1,8 @@
+# ads.txt for sagar-0292.github.io
+#
+# AdSense only checks ads.txt at the true domain root, so this file (not
+# the one under product-photo-tool/) is the one that actually takes effect.
+# Replace REPLACE_ME below with your real AdSense Publisher ID once
+# approved (Account → Account information, format: pub-XXXXXXXXXXXXXXXX).
+#
+# google.com, pub-REPLACE_ME, DIRECT, f08c47fec0942fa0

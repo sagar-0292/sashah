@@ -1,0 +1,5 @@
+# robots.txt for sagar-0292.github.io (covers MedVault and SnapList by Sahaay)
+User-agent: *
+Allow: /
+
+Sitemap: https://sagar-0292.github.io/sashah/product-photo-tool/sitemap.xml

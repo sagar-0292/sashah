@@ -1,10 +1,9 @@
 # ads.txt for SnapList (product-photo-tool)
 #
-# IMPORTANT: crawlers check ads.txt at your DOMAIN ROOT (e.g.
-# https://sagar-0292.github.io/ads.txt), not at a sub-path like
-# /sashah/product-photo-tool/ads.txt. This file is a placeholder for when
-# this tool moves to its own domain/root — see README.md "Enabling ads".
+# NOT the file AdSense actually reads — crawlers only check ads.txt at the
+# DOMAIN ROOT (https://sagar-0292.github.io/ads.txt), never at a sub-path
+# like this one. The real, live file is /ads.txt at the repo root; edit
+# that one when you get your AdSense Publisher ID. This copy is kept only
+# for reference.
 #
-# Once you have your AdSense Publisher ID, the real line to publish at your
-# domain root looks like:
 # google.com, pub-REPLACE_ME, DIRECT, f08c47fec0942fa0

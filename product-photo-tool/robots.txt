@@ -1,12 +1,11 @@
 # robots.txt for SnapList by Sahaay (product-photo-tool)
 #
-# IMPORTANT: crawlers only check robots.txt at your DOMAIN ROOT
-# (e.g. https://sagar-0292.github.io/robots.txt), never at a sub-path like
-# /sashah/product-photo-tool/robots.txt. This file has no effect on crawling
-# from here — it's a reference for what to publish at the real root once
-# this tool has its own domain, or to merge into the root repo's robots.txt
-# if one exists. Each page's own <meta name="robots" content="index, follow">
-# tag is what actually controls indexing today, regardless of location.
+# NOT the file crawlers actually read — robots.txt only takes effect at the
+# DOMAIN ROOT (https://sagar-0292.github.io/robots.txt), never at a sub-path
+# like this one. The real, live file is /robots.txt at the repo root. This
+# copy is kept only for reference. Each page's own
+# <meta name="robots" content="index, follow"> tag is what controls
+# indexing regardless of either file.
 
 User-agent: *
 Allow: /
