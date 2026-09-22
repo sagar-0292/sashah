@@ -38,7 +38,7 @@ function toast(msg, type) {
   el.className = 'toast' + (type ? ' toast-' + type : '');
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add('hidden'), 3800);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), type === 'error' ? 6000 : 3800);
 }
 
 /* ===================== Settings storage ===================== */
@@ -184,7 +184,30 @@ function updateGenerateState() {
   refreshKeyBanner();
 }
 
+// Resets photos, all form fields, and the output panel back to a blank
+// starting state. Shared by "Clear all" (step 1) and "Start over" (after
+// a result is shown) so both behave identically.
+function resetForm() {
+  photos = [];
+  renderPhotoGrid();
+  $('#resultsSection').classList.add('hidden');
+  $('#outputPlaceholder').classList.remove('hidden');
+  $('.generate-bar').classList.remove('hidden');
+  $('#productName').value = '';
+  $('#category').selectedIndex = 0;
+  $('#platform').selectedIndex = 0;
+  $('#features').value = '';
+  $('#tone').selectedIndex = 0;
+  $('#length').selectedIndex = 0;
+  $('#useEmojis').checked = false;
+}
+
 function initPhotoInput() {
+  $('#clearAllBtn').addEventListener('click', () => {
+    resetForm();
+    toast('Cleared', 'success');
+  });
+
   $('#cameraInput').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -420,7 +443,9 @@ async function generateListing() {
     toast('Listing ready', 'success');
   } catch (err) {
     console.error(err);
-    toast(err.message || 'Something went wrong while generating the listing.', 'error');
+    const msg = err.message || 'Something went wrong while generating the listing.';
+    const transient = /high demand|overloaded|unavailable|rate limit|503|429/i.test(msg);
+    toast(transient ? `${msg} This is a live AI API — please retry a few times, it usually goes through shortly.` : msg, 'error');
   } finally {
     clearInterval(loadingInterval);
     $('#loadingCard').classList.add('hidden');
@@ -553,13 +578,7 @@ function initResultActions() {
   $('#regenerateBtn').addEventListener('click', generateListing);
 
   $('#startOverBtn').addEventListener('click', () => {
-    photos = [];
-    renderPhotoGrid();
-    $('#resultsSection').classList.add('hidden');
-    $('#outputPlaceholder').classList.remove('hidden');
-    $('.generate-bar').classList.remove('hidden');
-    $('#productName').value = '';
-    $('#features').value = '';
+    resetForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
