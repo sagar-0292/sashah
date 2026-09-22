@@ -68,6 +68,16 @@
   window.ADSENSE_CLIENT_ID = 'ca-pub-REPLACE_ME';
   window.ADSENSE_SLOT_ID = 'REPLACE_ME';
 </script>
+
+<!-- Free-tier AI proxy — see README.md "No-key free tier" for setup.
+     Points at the sahaay Vercel deployment's /api/free-generate endpoint,
+     which holds the operator's AI key server-side (never shipped to this
+     page) and rate-limits each visitor. Left unconfigured (placeholder),
+     the app falls back to requiring visitors to bring their own free key,
+     exactly as before. -->
+<script>
+  window.FREE_API_BASE = 'REPLACE_ME'; // e.g. 'https://your-sahaay-deployment.vercel.app'
+</script>
 </head>
 <body>
 
@@ -96,9 +106,9 @@
     <section class="intro-card" id="introCard">
       <h1>Turn a photo into a <em class="script-accent">ready-to-sell</em> listing</h1>
       <p>Snap or upload a photo, tell it a little about the item, and get an AI-written <strong>title, description, bullet points and tags</strong> you can paste straight into Amazon, Etsy, Shopify, eBay, Instagram or anywhere else you sell.</p>
-      <p class="intro-free">Runs on a <strong>free AI key</strong> that only your device uses — nothing is stored on any server.</p>
-      <button class="btn btn-primary btn-block" id="introSetupBtn">Set up my free AI key →</button>
-      <button class="btn-link" id="introDismiss">I've already set this up</button>
+      <p class="intro-free" id="introFreeLine">Try it instantly — <strong>no signup, no API key needed.</strong></p>
+      <button class="btn btn-primary btn-block" id="introDismiss">Get started →</button>
+      <button class="btn-link" id="introSetupBtn">Want unlimited use? Add your own free AI key</button>
     </section>
 
     <!-- ===== Key missing banner ===== -->
@@ -310,7 +320,7 @@
     <div class="sheet" id="settingsSheet">
       <div class="sheet-handle"></div>
       <h2>AI provider settings</h2>
-      <p class="sheet-desc">SnapList by Sahaay calls the AI provider directly from your phone or browser. Your API key is saved only in this device's local storage — it is never sent anywhere except the provider you choose below.</p>
+      <p class="sheet-desc" id="settingsIntroLine">By default SnapList works instantly with no key — a shared free connection with a small daily limit per visitor. Add your own free key below for <strong>unlimited, fully private use</strong>: your photos then go directly from your phone or browser to the provider you choose, and the key is saved only in this device's local storage.</p>
 
       <div class="field">
         <label for="provider">AI provider</label>

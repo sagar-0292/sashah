@@ -71,10 +71,22 @@ function hasKey() {
   return !!getSettings().apiKey.trim();
 }
 
+// The free, no-signup AI proxy (see sahaay/api/free-generate.js). Configured
+// via window.FREE_API_BASE in index.html; left as the placeholder, the app
+// falls back to requiring visitors to bring their own key, exactly as before.
+function freeApiConfigured() {
+  const base = window.FREE_API_BASE || '';
+  return !!base && !base.includes('REPLACE_ME');
+}
+// Can the user generate right now, one way or another?
+function canGenerate() {
+  return hasKey() || freeApiConfigured();
+}
+
 /* ===================== Intro / first run ===================== */
 function initIntro() {
   const seen = localStorage.getItem(LS.seenIntro) === '1';
-  if (seen && hasKey()) $('#introCard').classList.add('hidden');
+  if (seen) $('#introCard').classList.add('hidden');
 
   $('#introSetupBtn').addEventListener('click', () => {
     localStorage.setItem(LS.seenIntro, '1');
@@ -88,7 +100,7 @@ function initIntro() {
 }
 
 function refreshKeyBanner() {
-  $('#noKeyBanner').classList.toggle('hidden', hasKey());
+  $('#noKeyBanner').classList.toggle('hidden', canGenerate());
 }
 
 /* ===================== Photo handling ===================== */
@@ -157,12 +169,15 @@ function updateGenerateState() {
   if (photos.length === 0) {
     btn.disabled = true;
     sub.textContent = 'Add at least one photo to continue';
-  } else if (!hasKey()) {
+  } else if (!canGenerate()) {
     btn.disabled = true;
     sub.textContent = 'Add your free AI key in Settings to continue';
   } else {
     btn.disabled = false;
-    sub.textContent = `${photos.length} photo${photos.length > 1 ? 's' : ''} ready`;
+    const usingFreeTier = !hasKey() && freeApiConfigured();
+    sub.textContent = usingFreeTier
+      ? `${photos.length} photo${photos.length > 1 ? 's' : ''} ready · using shared free AI`
+      : `${photos.length} photo${photos.length > 1 ? 's' : ''} ready`;
   }
   refreshKeyBanner();
 }
@@ -335,9 +350,40 @@ function providerErrorMessage(status, apiMsg) {
   return apiMsg ? `AI provider error: ${apiMsg}` : `AI provider error (${status}).`;
 }
 
+// The no-signup free path: form fields go to our own server (sahaay's
+// free-generate endpoint), which holds the AI key and forwards the request —
+// the key itself never reaches this page. Rate-limited per visitor server-side.
+function freeProxyFields() {
+  return {
+    productName: $('#productName').value.trim(),
+    category: $('#category').value.trim(),
+    platform: $('#platform').value,
+    features: $('#features').value.trim(),
+    tone: $('#tone').value,
+    length: $('#length').value,
+    useEmojis: $('#useEmojis').checked,
+  };
+}
+
+async function callFreeProxy() {
+  const url = `${window.FREE_API_BASE}/api/free-generate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...freeProxyFields(),
+      photos: photos.map((p) => ({ base64: p.base64, mime: p.mime })),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || `The free AI service is having issues right now (${res.status}). Please try again, or add your own free key in Settings.`);
+  }
+  return data.result;
+}
+
 async function generateListing() {
-  const settings = getSettings();
-  if (!settings.apiKey.trim()) {
+  if (!canGenerate()) {
     toast('Add your free AI API key in Settings first.', 'error');
     openSettings();
     return;
@@ -360,9 +406,15 @@ async function generateListing() {
   }, 1800);
 
   try {
-    const prompt = buildPrompt();
-    const rawText = settings.provider === 'openrouter' ? await callOpenRouter(prompt, settings) : await callGemini(prompt, settings);
-    const parsed = normalizeResult(extractJson(rawText));
+    let parsed;
+    if (hasKey()) {
+      const settings = getSettings();
+      const prompt = buildPrompt();
+      const rawText = settings.provider === 'openrouter' ? await callOpenRouter(prompt, settings) : await callGemini(prompt, settings);
+      parsed = normalizeResult(extractJson(rawText));
+    } else {
+      parsed = await callFreeProxy();
+    }
     showResult(parsed);
     saveToHistory(parsed);
     toast('Listing ready', 'success');

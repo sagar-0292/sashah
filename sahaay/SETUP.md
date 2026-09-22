@@ -65,6 +65,8 @@ Since subscribers no longer bring their own key, you need one that the
    | `RAZORPAY_WEBHOOK_SECRET` | from step 3.5 |
    | `DAILY_GEMINI_CAP` | optional, defaults to `1400` — see "Staying on the free tier" below |
    | `ALERT_WEBHOOK_URL` | optional — see below |
+   | `FREE_DAILY_IP_LIMIT` | optional, defaults to `8` — see "The anonymous free tier" below |
+   | `IP_HASH_SALT` | optional but recommended — any random string; used only to hash visitor IPs so raw IPs are never stored |
 
 4. Deploy.
 5. **Add the domain**: Project → **Settings → Domains → Add** → type `sahaay.online` (and `www.sahaay.online` if you want that too). Vercel will show you the exact DNS records to add — usually:
@@ -72,6 +74,29 @@ Since subscribers no longer bring their own key, you need one that the
    - `CNAME` record, host `www`, value `cname.vercel-dns.com`
 
    Add those at your domain registrar's DNS settings (wherever you bought `sahaay.online`). Vercel's dashboard will show a green checkmark once it detects the records — this can take a few minutes to a few hours depending on DNS propagation.
+
+## The anonymous free tier (powers the public product-photo-tool)
+
+`/api/free-generate` is a second, deliberately unauthenticated endpoint — no
+Firebase Auth, no subscription check. It's what the free `product-photo-tool`
+site calls by default so a first-time visitor gets a working result with
+zero signup, while your `GEMINI_API_KEY` still never reaches their browser
+(it lives only in this function's environment, exactly like `/api/generate`).
+Instead of a per-user monthly quota, each visitor gets `FREE_DAILY_IP_LIMIT`
+generations per day, tracked by a salted one-way hash of their IP (never the
+raw IP) that's discarded the next day.
+
+**You don't need Razorpay set up to turn this on** — only steps 1 (Firebase)
+and 2 (Gemini key) above, plus deploying this Vercel project. That's
+deliberate: it lets you validate demand on the free tool first and add the
+paid tier later without redeploying anything new, matching the
+free-with-ads-first plan.
+
+To connect it: after deploying, copy this project's Vercel URL (either the
+`*.vercel.app` one or your custom domain once set up) into
+`product-photo-tool/index.html`'s `window.FREE_API_BASE` — see that
+project's own README for the exact step. Until you do, `product-photo-tool`
+quietly falls back to requiring visitors to bring their own key.
 
 ## 5. Test before going live
 

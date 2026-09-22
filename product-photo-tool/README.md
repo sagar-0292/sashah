@@ -8,12 +8,24 @@ Fully self-contained; independent of the other project(s) in this repo.
 
 1. Add up to 4 photos of the product (camera or gallery).
 2. Optionally add product name, category, key details, tone and platform.
-3. Tap **Write my listing**. The app sends your photo(s) and details directly from your browser to an AI provider you've connected, and shows back an editable listing.
+3. Tap **Write my listing**. By default this goes through a free, rate-limited shared connection we operate — no signup, no key. If you've added your own key in Settings, it goes directly from your browser to that provider instead.
 4. Copy any field, copy everything, or download a `.txt` file. Past listings are saved on-device under the 🕒 history button.
 
-## Free AI providers supported
+## No-key free tier (default experience)
 
-You bring your own **free** API key — nothing is billed, no credit card required, and the key is stored only in your browser's local storage (never sent anywhere but the provider you choose).
+Out of the box, visitors can generate listings immediately with **no signup and no API key** — the request goes to a small serverless proxy that holds an operator-owned AI key server-side and forwards the request, so the key is never shipped to the browser. Each visitor gets a modest number of free generations per day (identified only by a salted, one-way hash of their IP — never stored raw), enough to genuinely try the tool.
+
+This is powered by the `sahaay/api/free-generate.js` endpoint in this repo (see `sahaay/SETUP.md`) — a sibling project, deployed separately on Vercel. To activate it here:
+
+1. Deploy the `sahaay` folder to Vercel per its own `SETUP.md` (you need this anyway if you ever turn on the paid tier — this reuses the same deployment).
+2. Open this folder's `index.html`, find `window.FREE_API_BASE` near the top of `<head>`, and set it to your deployed URL (e.g. `https://your-sahaay-deployment.vercel.app`).
+3. Redeploy. The intro card and generate button will automatically switch to "no key needed" once `FREE_API_BASE` is a real URL — until then, the app quietly falls back to requiring a key, exactly as it did before this feature existed.
+
+**Cost control**: the per-visitor daily cap is `FREE_DAILY_IP_LIMIT` (set on the `sahaay` Vercel project, default 8/day). The same operator-only usage alert described in `sahaay/SETUP.md` covers this endpoint too — it doesn't distinguish free-tier from paid traffic, since both draw on the same Gemini key and the same daily quota concern.
+
+## Bringing your own key (optional, unlimited & fully private)
+
+Anyone can still add their own **free** API key in Settings for unlimited use — nothing billed, no credit card, and it's stored only in that browser's local storage (never sent anywhere but the provider chosen).
 
 - **Google Gemini** (recommended) — get a free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Generous daily free quota for `gemini-3.6-flash` and other current Flash models (selectable in Settings).
 - **OpenRouter** — get a free key at [openrouter.ai/keys](https://openrouter.ai/keys). Gives access to several `:free`-tier vision models (Gemini, Qwen-VL, Llama Vision, Mistral) through one key.
@@ -66,7 +78,7 @@ To actually get indexed and start showing up in results:
 
 ## Privacy
 
-- No backend of ours is involved for the app itself. It runs entirely in your browser.
-- Photos are resized/compressed on-device before being sent to the AI provider you chose, for that one request only.
-- Your API key and your recent listings history are stored only in this browser's `localStorage`, on this device.
+- **With your own key**: no backend of ours is involved. Photos are resized/compressed on-device and sent straight to the AI provider you chose, for that one request only.
+- **With the default free tier**: photos pass through the `sahaay` serverless proxy just long enough to forward them to the AI provider and return the result — nothing is stored there beyond the request, and visitors are identified only by a salted hash of their IP for the day's rate limit, never a raw IP.
+- Your API key (if you add one) and your recent listings history are stored only in this browser's `localStorage`, on this device.
 - If ads are enabled, Google AdSense may set advertising cookies — see [`privacy.html`](privacy.html) for details and opt-out links.
