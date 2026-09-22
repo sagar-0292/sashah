@@ -91,7 +91,7 @@ function initIntro() {
   $('#introSetupBtn').addEventListener('click', () => {
     localStorage.setItem(LS.seenIntro, '1');
     $('#introCard').classList.add('hidden');
-    openSettings();
+    requestOpenSettings();
   });
   $('#introDismiss').addEventListener('click', () => {
     localStorage.setItem(LS.seenIntro, '1');
@@ -636,7 +636,7 @@ function closeSheet(overlay) {
   overlay.classList.add('hidden');
 }
 function initSheetDismiss() {
-  [$('#settingsOverlay'), $('#historyOverlay')].forEach((overlay) => {
+  [$('#settingsOverlay'), $('#historyOverlay'), $('#pinLockOverlay')].forEach((overlay) => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeSheet(overlay);
     });
@@ -681,8 +681,8 @@ function openSettings() {
 }
 
 function initSettings() {
-  $('#settingsBtn').addEventListener('click', openSettings);
-  $('#noKeyBannerBtn').addEventListener('click', openSettings);
+  $('#settingsBtn').addEventListener('click', requestOpenSettings);
+  $('#noKeyBannerBtn').addEventListener('click', requestOpenSettings);
   $('#closeSettingsBtn').addEventListener('click', () => closeSheet($('#settingsOverlay')));
   $('#provider').addEventListener('change', refreshProviderUI);
 
@@ -740,6 +740,112 @@ function initSettings() {
       testBtn.disabled = false;
       testBtn.textContent = 'Test connection';
     }
+  });
+}
+
+/* ===================== PIN lock (this device only) ===================== */
+// A lightweight local screen-lock: gates opening Settings behind a PIN so
+// the saved API key isn't visible to anyone who casually picks up this
+// device. The PIN is hashed (SHA-256) before being stored — never kept in
+// plaintext — but this is still only a deterrent against casual access on
+// THIS device, not real security: BYOK mode inherently sends the raw key
+// from this browser to the AI provider on every request, so anyone who
+// inspects network traffic from this browser can see it regardless of any
+// PIN. There's no way to fix that client-side — see the app's README.
+const LS_PIN_HASH = 'spt_pinHash';
+
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hasPinLock() {
+  return !!localStorage.getItem(LS_PIN_HASH);
+}
+async function setPinLock(pin) {
+  localStorage.setItem(LS_PIN_HASH, await sha256Hex(pin));
+}
+async function verifyPinLock(pin) {
+  return (await sha256Hex(pin)) === localStorage.getItem(LS_PIN_HASH);
+}
+function clearPinLock() {
+  localStorage.removeItem(LS_PIN_HASH);
+}
+
+function renderPinManageUI() {
+  const active = hasPinLock();
+  $('#pinSetupBlock').classList.toggle('hidden', active);
+  $('#pinActiveBlock').classList.toggle('hidden', !active);
+  $('#newPinInput').value = '';
+}
+
+// Every entry point into Settings goes through here instead of calling
+// openSettings() directly, so the key can never be populated into the
+// #apiKey field without the PIN being verified first (when one is set).
+function requestOpenSettings() {
+  if (!hasPinLock()) {
+    openSettings();
+    return;
+  }
+  $('#pinInput').value = '';
+  $('#pinError').textContent = '';
+  openSheet($('#pinLockOverlay'));
+  setTimeout(() => $('#pinInput').focus(), 50);
+}
+
+function initPinLock() {
+  renderPinManageUI();
+
+  $('#setPinBtn').addEventListener('click', async () => {
+    const pin = $('#newPinInput').value.trim();
+    if (!/^\d{4,6}$/.test(pin)) {
+      toast('PIN must be 4–6 digits.', 'error');
+      return;
+    }
+    await setPinLock(pin);
+    renderPinManageUI();
+    toast('PIN lock enabled', 'success');
+  });
+
+  $('#changePinBtn').addEventListener('click', () => {
+    // Already inside an unlocked Settings sheet, so no need to re-verify —
+    // just clear the old one and let them set a fresh PIN below.
+    clearPinLock();
+    renderPinManageUI();
+  });
+
+  $('#removePinBtn').addEventListener('click', () => {
+    if (!confirm('Remove the PIN lock from this device?')) return;
+    clearPinLock();
+    renderPinManageUI();
+    toast('PIN lock removed', 'success');
+  });
+
+  $('#pinUnlockBtn').addEventListener('click', async () => {
+    const pin = $('#pinInput').value.trim();
+    if (await verifyPinLock(pin)) {
+      closeSheet($('#pinLockOverlay'));
+      openSettings();
+    } else {
+      $('#pinError').textContent = 'Incorrect PIN.';
+      $('#pinInput').value = '';
+      $('#pinInput').focus();
+    }
+  });
+  $('#pinInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('#pinUnlockBtn').click();
+  });
+
+  $('#pinCancelBtn').addEventListener('click', () => closeSheet($('#pinLockOverlay')));
+
+  $('#pinForgotBtn').addEventListener('click', () => {
+    if (!confirm("Reset PIN? This also removes your saved API key from this device — there's no way to recover a forgotten PIN otherwise.")) return;
+    clearPinLock();
+    localStorage.removeItem(LS.apiKey);
+    closeSheet($('#pinLockOverlay'));
+    updateGenerateState();
+    toast('PIN and saved key removed. You can set a new PIN in Settings.', 'success');
   });
 }
 
@@ -806,6 +912,7 @@ function init() {
   initHistory();
   initSheetDismiss();
   initSettings();
+  initPinLock();
   initServiceWorker();
 
   $('#generateBtn').addEventListener('click', generateListing);

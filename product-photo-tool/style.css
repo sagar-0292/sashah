@@ -252,6 +252,8 @@ textarea{resize:vertical;line-height:1.5;}
 .get-key-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.6;}
 .get-key-box a{color:var(--accent2);font-weight:600;}
 .get-key-box ol{padding-left:18px;margin-top:4px;}
+.pin-lock-field{border-top:1px solid var(--border);padding-top:14px;margin-top:4px;}
+.pin-error{color:var(--red);font-size:13px;text-align:center;min-height:18px;}
 
 /* ===== History ===== */
 .history-list{display:flex;flex-direction:column;gap:10px;max-height:50vh;overflow-y:auto;}

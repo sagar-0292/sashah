@@ -366,7 +366,43 @@
         <button class="btn btn-primary" id="saveKeyBtn">Save</button>
       </div>
       <button class="btn-link btn-link-danger" id="clearKeyBtn">Remove saved key from this device</button>
+
+      <div class="field pin-lock-field">
+        <label>App lock (this device)</label>
+        <div id="pinSetupBlock">
+          <p class="hint">Add a PIN so Settings and your saved key aren't visible to anyone who picks up this device. This only protects casual access on this device — it can't stop someone inspecting network traffic while using your key.</p>
+          <div class="key-input-row">
+            <input type="password" id="newPinInput" inputmode="numeric" pattern="[0-9]*" placeholder="Choose a 4–6 digit PIN" autocomplete="off">
+            <button class="btn btn-secondary" id="setPinBtn" type="button">Set PIN</button>
+          </div>
+        </div>
+        <div class="hidden" id="pinActiveBlock">
+          <p class="hint">🔒 PIN lock is on for this device.</p>
+          <div class="sheet-actions">
+            <button class="btn btn-secondary" id="changePinBtn" type="button">Change PIN</button>
+            <button class="btn btn-secondary" id="removePinBtn" type="button">Remove PIN</button>
+          </div>
+        </div>
+      </div>
+
       <button class="btn-link" id="closeSettingsBtn">Close</button>
+    </div>
+  </div>
+
+  <!-- ===== PIN Lock Overlay ===== -->
+  <div class="sheet-overlay hidden" id="pinLockOverlay">
+    <div class="sheet" id="pinLockSheet">
+      <div class="sheet-handle"></div>
+      <h2>Enter PIN</h2>
+      <p class="sheet-desc">This device has a PIN set to protect Settings and your saved API key.</p>
+      <div class="field">
+        <label for="pinInput">PIN</label>
+        <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" placeholder="4–6 digit PIN" autocomplete="off">
+      </div>
+      <p class="pin-error" id="pinError"></p>
+      <button class="btn btn-primary btn-block btn-lg" id="pinUnlockBtn">Unlock</button>
+      <button class="btn-link" id="pinCancelBtn">Cancel</button>
+      <button class="btn-link btn-link-danger" id="pinForgotBtn">Forgot PIN? Reset (clears saved key too)</button>
     </div>
   </div>
 
