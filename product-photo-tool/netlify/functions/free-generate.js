@@ -5,11 +5,14 @@
 // Environment variables), never in any file shipped to a browser.
 //
 // Visitors are rate-limited per UTC day by a salted one-way hash of their
-// IP (stored in Netlify Blobs) — the raw IP is never stored, and nothing
-// persists beyond that day's count.
+// IP, counted in memory for this function instance — the raw IP is never
+// stored. (Netlify Blobs would give a persistent count across instances,
+// but its automatic siteID/token injection isn't reliable in every
+// deploy context, so this trades a little precision — a redeploy or a
+// long-idle instance resets counts early — for something that always
+// works with zero extra configuration.)
 
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
 
 const MAX_PHOTOS = 4;
 const MAX_BASE64_CHARS = 2_000_000; // ~1.5MB per photo after base64 overhead
@@ -119,17 +122,24 @@ async function callGemini(prompt, photos) {
   return text;
 }
 
-// Atomically-enough checks + increments a visitor's daily free-tier usage.
-// Throws (429) if they're already at today's limit; a visitor is
-// identified only by their hashed IP for today.
-async function reserveFreeUsage(ipHash) {
-  const store = getStore({ name: 'snaplist-free-usage', consistency: 'strong' });
+// In-memory usage counter, keyed by day + hashed IP. Persists only for the
+// lifetime of this warm function instance (Netlify may spin up more than
+// one under load, and any of them may be recycled at any time) — a
+// best-effort deterrent against a single visitor hammering the endpoint,
+// not a hard global cap.
+const usageMap = new Map();
+
+function reserveFreeUsage(ipHash) {
   const key = `${todayKey()}_${ipHash}`;
-  const current = Number((await store.get(key)) || '0');
+  const current = usageMap.get(key) || 0;
   if (current >= FREE_DAILY_IP_LIMIT) {
     throw httpError(429, `You've used today's ${FREE_DAILY_IP_LIMIT} free generations. Add your own free API key in Settings for unlimited use, or try again tomorrow.`);
   }
-  await store.set(key, String(current + 1));
+  usageMap.set(key, current + 1);
+  if (usageMap.size > 5000) {
+    const today = todayKey();
+    for (const k of usageMap.keys()) if (!k.startsWith(today)) usageMap.delete(k);
+  }
   return current + 1;
 }
 
@@ -152,7 +162,7 @@ exports.handler = async (event) => {
     const ip = event.headers['x-nf-client-connection-ip']
       || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
       || 'unknown';
-    const usedToday = await reserveFreeUsage(hashIp(ip));
+    const usedToday = reserveFreeUsage(hashIp(ip));
 
     const prompt = buildPrompt(body);
     const rawText = await callGemini(prompt, photos);
