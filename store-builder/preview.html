@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Store preview · Sahaay Stores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="storefront.css">
+<style>
+  html,body{margin:0;background:#fff;}
+  .pv-bar{position:relative;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#201D1B;color:#F5EEE1;font:500 13px/1.4 Inter,system-ui,sans-serif;padding:8px 14px;text-align:center;}
+  .pv-bar a{color:#F0B8C4;font-weight:600;}
+  .pv-empty{font:16px/1.5 Inter,system-ui,sans-serif;text-align:center;padding:80px 20px;color:#6B645C;}
+  body.embedded .pv-bar{display:none;}
+</style>
+</head>
+<body>
+<div class="pv-bar">Preview of your store · test orders placed here show up in your dashboard · <a href="index.html#/admin">Back to dashboard</a></div>
+<div id="sf-root"></div>
+<script src="storefront.js"></script>
+<script>
+(function () {
+  var KEY = 'sahaay-stores:v1';
+  var root = document.getElementById('sf-root');
+  var embedded = window.self !== window.top;
+  if (embedded) document.body.classList.add('embedded');
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+  }
+
+  var store = load();
+  if (!store) {
+    root.innerHTML = '<div class="pv-empty">No store yet. <a href="index.html#/setup">Create your store</a> first.</div>';
+    return;
+  }
+
+  // Test orders go straight into the builder's saved data, and reduce stock the
+  // same way a real sale would, so the owner can try the full flow.
+  function onOrder(order) {
+    var s = load() || store;
+    order.test = true;
+    s.orders = [order].concat(s.orders || []);
+    order.items.forEach(function (it) {
+      (s.products || []).forEach(function (p) {
+        if (p.id === it.productId && p.stock !== null && p.stock !== '' && p.stock !== undefined) {
+          p.stock = Math.max(0, Number(p.stock) - it.qty);
+        }
+      });
+    });
+    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* quota */ }
+    store = s;
+    sf.update(s);
+    if (window.parent !== window) window.parent.postMessage({ type: 'sahaay-order' }, location.origin);
+  }
+
+  var sf = SahaayStorefront.mount(root, store, { mode: 'preview', onOrder: onOrder });
+
+  // Live, unsaved edits from the design editor.
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'sahaay-store') return;
+    store = e.data.store;
+    sf.update(store);
+  });
+  // Saved changes from another tab.
+  window.addEventListener('storage', function (e) {
+    if (e.key === KEY) { var s = load(); if (s) { store = s; sf.update(s); } }
+  });
+})();
+</script>
+</body>
+</html>
