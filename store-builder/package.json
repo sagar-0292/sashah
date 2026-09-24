@@ -1,0 +1,16 @@
+{
+  "name": "sahaay-stores",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Sahaay Stores — hosted online stores and mobile apps for small businesses (static frontend + Vercel serverless API)",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}

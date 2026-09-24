@@ -74,25 +74,150 @@
     s.contact = s.contact || {};
     s.payments = s.payments || {};
     s.shipping = s.shipping || {};
+    s.owner = s.owner || { name: '', bio: '', photo: '' };
     s.app = s.app || { enabled: false, name: s.name, shortName: (s.name || '').slice(0, 12), bg: s.theme.primary, icon: '', banner: true };
     return s;
   }
   var store = load();
 
-  function save() {
+  // Saves locally and, on the hosted platform, publishes the change live.
+  function save(opts) {
     try {
       localStorage.setItem(KEY, JSON.stringify(store));
-      return true;
     } catch (e) {
       toast('Storage is full. Try fewer or smaller photos.', 'alert');
       return false;
     }
+    if (!(opts && opts.local)) queueSync();
+    return true;
+  }
+
+  // ============================================================
+  // Hosted platform (cloud) — auto-publishing
+  // ============================================================
+  var Cloud = window.SahaayCloud;
+  var cloud = { on: false, ai: false, state: 'idle', error: '', timer: 0, running: false, again: false };
+
+  function setSync(state, error) {
+    cloud.state = state;
+    cloud.error = error || '';
+    var el = app.querySelector('[data-sync]');
+    if (el) el.outerHTML = syncPill();
+  }
+
+  function syncPill() {
+    if (!cloud.on) return '<span data-sync></span>';
+    var map = {
+      idle: ['green', 'Live'], saved: ['green', 'Live · saved'], pending: ['amber', 'Unsaved changes'],
+      saving: ['amber', 'Publishing…'], error: ['red', 'Not published — retry']
+    };
+    var m = map[cloud.state] || map.idle;
+    return '<button class="pill pill-' + m[0] + ' sync-pill" data-sync data-action="sync-now" title="' + esc(cloud.error || 'Changes publish automatically') + '">' + m[1] + '</button>';
+  }
+
+  function queueSync(delay) {
+    if (!cloud.on || !store || !store.slug && !store.flags.launched) return;
+    clearTimeout(cloud.timer);
+    if (cloud.state !== 'saving') setSync('pending');
+    cloud.timer = setTimeout(runSync, delay == null ? 1200 : delay);
+  }
+
+  function runSync() {
+    if (!cloud.on || !store) return Promise.resolve();
+    if (cloud.running) { cloud.again = true; return Promise.resolve(); }
+    cloud.running = true;
+    setSync('saving');
+    return uploadPendingImages().then(ensureAppIcons).then(function () {
+      return Cloud.saveStore(publicCopy(store));
+    }).then(function (r) {
+      store.slug = r.slug;
+      store.url = r.url;
+      store.flags.published = true;
+      store.flags.publishedAt = new Date().toISOString();
+      save({ local: true });
+      setSync('saved');
+    }).catch(function (e) {
+      setSync('error', e.message);
+    }).then(function () {
+      cloud.running = false;
+      if (cloud.again) { cloud.again = false; runSync(); }
+    });
+  }
+
+  // What gets published: everything except orders and builder-only flags.
+  function publicCopy(s) {
+    var c = JSON.parse(JSON.stringify(s));
+    delete c.orders; delete c.flags; delete c.url;
+    return c;
+  }
+
+  // Uploads a freshly picked photo; on the hosted platform the store keeps a
+  // URL instead of the image itself. Falls back to the inline image offline.
+  function storeImage(dataUrl) {
+    if (!cloud.on) return Promise.resolve(dataUrl);
+    return Cloud.ensureUser().then(function () { return Cloud.upload(dataUrl); }).catch(function () { return dataUrl; });
+  }
+
+  // Catches any inline images left over (e.g. picked while offline).
+  function uploadPendingImages() {
+    var jobs = [];
+    var up = function (get, set) {
+      var v = get();
+      if (typeof v === 'string' && v.indexOf('data:') === 0) jobs.push(Cloud.upload(v).then(set));
+    };
+    up(function () { return store.logo; }, function (u) { store.logo = u; });
+    up(function () { return store.hero.image; }, function (u) { store.hero.image = u; });
+    up(function () { return store.owner && store.owner.photo; }, function (u) { store.owner.photo = u; });
+    up(function () { return store.app.icon; }, function (u) { store.app.icon = u; });
+    store.products.forEach(function (p) {
+      (p.images || []).forEach(function (_, i) {
+        up(function () { return p.images[i]; }, function (u) { p.images[i] = u; });
+      });
+    });
+    return Promise.all(jobs);
+  }
+
+  // Draws and uploads the home-screen icons whenever the logo/colour changes.
+  function ensureAppIcons() {
+    if (!store.app.enabled) return Promise.resolve();
+    var sig = [store.logo, store.app.bg || store.theme.primary, store.app.icon].join('|');
+    if (store.app.iconsSig === sig && store.app.icons) return Promise.resolve();
+    var sizes = [['192', 192], ['512', 512], ['maskable', 512, true], ['180', 180]];
+    return Promise.all(sizes.map(function (s) { return renderIcon(s[1], s[2], 'dataurl'); })).then(function (urls) {
+      return Promise.all(urls.map(function (u) { return Cloud.upload(u); }));
+    }).then(function (up) {
+      store.app.icons = {};
+      sizes.forEach(function (s, i) { store.app.icons[s[0]] = up[i]; });
+      store.app.iconsSig = sig;
+    }).catch(function (e) { console.warn('App icons not updated:', e); });
+  }
+
+  // Pull live orders and sold-down stock from the platform.
+  function refreshFromCloud() {
+    if (!cloud.on || !store || !store.slug || !Cloud.user()) return Promise.resolve();
+    return Promise.all([Cloud.orders(), Cloud.loadMine()]).then(function (res) {
+      var live = res[0].map(function (o) { o.cloud = true; return o; });
+      store.orders = live.concat((store.orders || []).filter(function (o) { return o.test; }))
+        .sort(function (a, b) { return String(b.createdAt).localeCompare(String(a.createdAt)); });
+      var server = res[1].store;
+      if (server) {
+        var byId = {};
+        (server.products || []).forEach(function (p) { byId[p.id] = p; });
+        store.products.forEach(function (p) {
+          var sp = byId[p.id];
+          if (sp && (Number(sp.stockSetAt) || 0) >= (Number(p.stockSetAt) || 0)) { p.stock = sp.stock; p.stockSetAt = sp.stockSetAt; }
+        });
+        store.url = res[1].url;
+      }
+      save({ local: true });
+      refreshNavCounts();
+    }).catch(function (e) { console.warn('Could not refresh from the platform:', e); });
   }
 
   var uid = SahaayPresets.uid;
   function money(n) { return SF.money(n, store && store.currency); }
   function waDigits(n) { return String(n || '').replace(/\D/g, ''); }
-  function isImg(s) { return s && String(s).indexOf('data:') === 0; }
+  function isImg(s) { return /^(data:|https?:|\/)/.test(String(s || '')); }
   function slug(s) { return String(s || 'store').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'store'; }
 
   var toastTimer;
@@ -254,8 +379,38 @@
     landing.hidden = true;
     app.hidden = false;
     if (r.name === 'setup') { renderWizard(); return; }
+    if (r.name === 'login') { renderLogin(); return; }
+    if (r.name === 'live') { if (store) renderLaunched(); else location.replace('#/setup'); return; }
     if (!store) { location.replace('#/setup'); return; }
     renderAdmin(r);
+  }
+
+  // ---------- sign in (returning owners on a new device) ----------
+  function renderLogin() {
+    document.title = 'Sign in · Sahaay Stores';
+    app.innerHTML = '<div class="auth-page"><div class="auth-card"><a class="brand" href="#/"><span class="brand-mark">' + icon('store', 16) + '</span>Sahaay <span class="brand-soft">Stores</span></a>' +
+      '<h1>Welcome back</h1><p>Sign in with the Google account you used to save your store.</p>' +
+      (cloud.on
+        ? '<button class="btn btn-secondary btn-lg btn-block" data-action="login-google">' + GOOGLE_G + 'Continue with Google</button>'
+        : '<div class="callout">' + icon('info', 16) + '<span>Signing in needs the hosted platform. In this version your store is saved in this browser.</span></div>') +
+      '<p class="auth-foot">New here? <a class="btn-link" href="#/setup">Create a store</a></p></div></div>';
+  }
+  var GOOGLE_G = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6C6.6 42.6 14.6 48 24 48z"/></svg>';
+
+  function afterSignIn() {
+    return Cloud.loadMine().then(function (r) {
+      if (r.store) {
+        var local = migrate(r.store);
+        local.slug = r.slug; local.url = r.url;
+        local.flags = { launched: true, published: true, designed: true, appVisited: true };
+        local.orders = [];
+        store = local;
+        save({ local: true });
+        return refreshFromCloud().then(function () { location.hash = '#/admin'; toast('Welcome back'); });
+      }
+      location.hash = '#/setup';
+      toast('No store on that account yet. Let\'s create one.', 'info');
+    });
   }
 
   window.addEventListener('hashchange', function () {
@@ -270,13 +425,13 @@
   }, { passive: true });
 
   // ============================================================
-  // Setup wizard (split screen with a live phone preview)
+  // Setup wizard — four questions, then the store publishes itself
   // ============================================================
   function freshWizard() {
-    return { step: 0, d: { name: '', category: '', tagline: '', logo: '', primary: '', template: '', font: '', whatsapp: '', upi: '', cod: true, email: '', currency: 'INR', samples: true, app: true } };
+    return { step: 0, busy: false, d: { name: '', category: '', description: '', ownerName: '', ownerBio: '', ownerPhoto: '', logo: '', logoImg: '', primary: '', template: '', font: '', whatsapp: '', currency: 'INR', app: true } };
   }
   var wz = freshWizard();
-  var WZ_STEPS = ['Basics', 'Look', 'Selling', 'Launch'];
+  var WZ_STEPS = ['Your business', 'About you', 'Your brand', 'Launch'];
 
   function applyPreset(cat) {
     var p = PRESETS[cat];
@@ -287,15 +442,20 @@
     wz.d.font = p.font;
   }
 
-  function wizardStore() {
+  function wizardInput(extra) {
     var d = wz.d;
-    return SahaayPresets.buildStore({
-      id: 'draft', name: d.name || 'Your Store', category: d.category || 'other', tagline: d.tagline,
-      logo: d.logo, primary: d.primary, template: d.template, font: d.font,
-      whatsapp: d.whatsapp, upi: d.upi, cod: d.cod, email: d.email, currency: d.currency,
-      samples: d.samples, app: d.app
-    });
+    return Object.assign({
+      name: d.name || 'Your Store', category: d.category || 'other', description: d.description,
+      ownerName: d.ownerName, ownerBio: d.ownerBio, ownerPhoto: d.ownerPhoto,
+      logo: d.logoImg || d.logo, primary: d.primary, template: d.template, font: d.font,
+      whatsapp: d.whatsapp, currency: d.currency, app: d.app,
+      // Hosted stores start empty (no made-up products for real customers);
+      // the download-only mode keeps samples so there's something to see.
+      samples: !cloud.on
+    }, extra || {});
   }
+  function wizardStore() { return SahaayPresets.buildStore(wizardInput({ id: 'draft' })); }
+
   var wzRaf = 0;
   function updateWizardPreview() {
     cancelAnimationFrame(wzRaf);
@@ -320,56 +480,64 @@
     }).join('') + '<input type="color" ' + bind + ' value="' + esc(current || '#1F1D1B') + '" aria-label="Custom colour"></div>';
   }
 
+  function wizardCanNext() {
+    var d = wz.d;
+    if (wz.step === 0) return !!(d.name.trim() && d.category && d.description.trim().length >= 10);
+    return true;
+  }
+
   function renderWizard() {
     document.title = 'Create your store · Sahaay Stores';
     var d = wz.d, s = wz.step, body = '';
 
     if (s === 0) {
-      body = '<h1>Let\'s build your shop.</h1><p class="wz-sub">A few quick questions and your store is ready. You can change everything later.</p>' +
+      body = '<h1>Tell us about your business.</h1><p class="wz-sub">Three quick answers. We\'ll design your store, write your homepage and put it online for you.</p>' +
         (store ? '<div class="callout">' + icon('alert', 16) + '<span>You already have a store, <b>' + esc(store.name) + '</b>. Finishing setup will replace it. <a class="btn-link" href="#/admin">Go to its dashboard</a></span></div>' : '') +
-        '<div class="field"><label for="wz-name">Store name</label><input id="wz-name" data-wz="name" placeholder="e.g. Crumb & Co." value="' + esc(d.name) + '" maxlength="60" autocomplete="organization"></div>' +
-        '<div class="field"><span class="field-label">What do you sell?</span><div class="cat-grid">' +
+        '<div class="field"><label for="wz-name">Business name</label><input id="wz-name" data-wz="name" placeholder="e.g. Crumb & Co." value="' + esc(d.name) + '" maxlength="60" autocomplete="organization"></div>' +
+        '<div class="field"><span class="field-label">What kind of business is it?</span><div class="cat-grid">' +
         Object.keys(PRESETS).map(function (k) {
           return '<button type="button" class="cat-opt' + (d.category === k ? ' on' : '') + '" data-action="wz-cat" data-cat="' + k + '"><span>' + PRESETS[k].emoji + '</span>' + PRESETS[k].label + '</button>';
         }).join('') + '</div></div>' +
-        '<div class="field"><label for="wz-tag">One-line description <span class="optional">(optional)</span></label><input id="wz-tag" data-wz="tagline" placeholder="e.g. Small-batch bakes, delivered warm across Pune" value="' + esc(d.tagline) + '" maxlength="120"></div>';
+        '<div class="field"><label for="wz-desc">Describe your business</label><textarea id="wz-desc" data-wz="description" rows="4" maxlength="800" placeholder="e.g. We bake eggless cakes and cookies to order in Pune, using butter and real chocolate. Perfect for birthdays and gifting.">' + esc(d.description) + '</textarea>' +
+        '<span class="help">What you sell, who it\'s for and what makes it special. We\'ll write your homepage from this.</span></div>';
     } else if (s === 1) {
-      body = '<h1>Make it look like you.</h1><p class="wz-sub">We picked a starting style for ' + esc(PRESETS[d.category].label.toLowerCase()) + '. Watch the preview update as you choose.</p>' +
-        '<div class="field"><span class="field-label">Theme</span>' + themeOptions('wz-set', d.template) + '</div>' +
-        '<div class="field"><span class="field-label">Brand colour</span>' + colorSwatches('wz-set', d.primary, 'data-wz="primary"') + '</div>' +
-        '<div class="field"><span class="field-label">Typography</span>' + segButtons('wz-set', 'font', FONT_OPTS, d.font) + '</div>' +
-        '<div class="field"><span class="field-label">Logo</span><div class="emoji-row">' + LOGO_EMOJIS.map(function (e) {
-          return '<button type="button" class="' + (d.logo === e ? 'on' : '') + '" data-action="wz-set" data-k="logo" data-v="' + e + '">' + e + '</button>';
-        }).join('') + '</div><span class="help">You can upload your own logo image later in Design.</span></div>';
+      body = '<h1>Now, a little about you.</h1><p class="wz-sub">People love buying from people. This becomes a “Meet the owner” section on your store. You can skip it.</p>' +
+        '<div class="owner-row"><label class="owner-photo" title="Add a photo">' + (d.ownerPhoto ? '<img src="' + esc(d.ownerPhoto) + '" alt="">' : icon('image', 22) + '<span>Photo</span>') +
+        '<input type="file" accept="image/*" data-upload="wz-owner-photo" hidden></label>' +
+        '<div class="field" style="flex:1;margin:0"><label for="wz-owner">Your name</label><input id="wz-owner" data-wz="ownerName" placeholder="e.g. Priya Sharma" value="' + esc(d.ownerName) + '" maxlength="60" autocomplete="name"></div></div>' +
+        '<div class="field"><label for="wz-bio">Your story <span class="optional">(optional)</span></label><textarea id="wz-bio" data-wz="ownerBio" rows="5" maxlength="800" placeholder="e.g. I started baking for friends in college. Today I bake every order myself, in small batches, in my home kitchen.">' + esc(d.ownerBio) + '</textarea>' +
+        '<span class="help">A few honest lines is perfect. We\'ll polish the wording, never the facts.</span></div>';
     } else if (s === 2) {
-      body = '<h1>How you\'ll get paid.</h1><p class="wz-sub">Customers check out on your store, then the full order arrives in your WhatsApp with their address — ready to confirm.</p>' +
-        '<div class="field"><label for="wz-wa">WhatsApp number for orders</label><input id="wz-wa" data-wz="whatsapp" type="tel" inputmode="tel" placeholder="91 98765 43210" value="' + esc(d.whatsapp) + '"><span class="help">Include the country code, e.g. 91 for India.</span></div>' +
-        '<div class="field"><label for="wz-upi">UPI ID <span class="optional">(optional)</span></label><input id="wz-upi" data-wz="upi" placeholder="yourname@okaxis" value="' + esc(d.upi) + '" autocapitalize="off" autocomplete="off"><span class="help">Customers pay the exact total straight into your bank. No fees.</span></div>' +
-        '<div class="switch-row"><div><b>Cash on delivery</b><small>Let customers pay when the order arrives</small></div><label class="switch"><input type="checkbox" data-wz="cod"' + (d.cod ? ' checked' : '') + '><span></span></label></div>' +
-        '<div class="field-row" style="margin-top:18px"><div class="field"><label for="wz-email">Email <span class="optional">(optional)</span></label><input id="wz-email" data-wz="email" type="email" value="' + esc(d.email) + '"></div>' +
-        '<div class="field"><label for="wz-cur">Currency</label><select id="wz-cur" data-wz="currency">' + CURRENCIES.map(function (c) {
-          return '<option' + (d.currency === c ? ' selected' : '') + '>' + c + '</option>';
-        }).join('') + '</select></div></div>';
+      body = '<h1>Your brand.</h1><p class="wz-sub">Have a logo or brand colours? Add them here. If not, we\'ve already picked a look for ' + esc(PRESETS[d.category].label.toLowerCase()) + '. Just continue.</p>' +
+        '<div class="field"><span class="field-label">Logo</span><div class="logo-pick">' +
+        '<label class="logo-upload">' + (d.logoImg ? '<img src="' + esc(d.logoImg) + '" alt="">' : icon('image', 20) + '<span>Upload</span>') + '<input type="file" accept="image/*" data-upload="wz-logo" hidden></label>' +
+        '<div class="emoji-row">' + LOGO_EMOJIS.map(function (e) {
+          return '<button type="button" class="' + (!d.logoImg && d.logo === e ? 'on' : '') + '" data-action="wz-set" data-k="logo" data-v="' + e + '">' + e + '</button>';
+        }).join('') + '</div></div>' + (d.logoImg ? '<button class="btn-link danger" data-action="wz-rm-logo">Remove uploaded logo</button>' : '<span class="help">No logo yet? Pick a symbol for now.</span>') + '</div>' +
+        '<div class="field"><span class="field-label">Brand colour</span>' + colorSwatches('wz-set', d.primary, 'data-wz="primary"') + '</div>' +
+        '<div class="field"><span class="field-label">Style</span>' + themeOptions('wz-set', d.template) + '</div>' +
+        '<div class="field"><span class="field-label">Typography</span>' + segButtons('wz-set', 'font', FONT_OPTS, d.font) + '</div>';
     } else {
-      body = '<h1>Ready to launch.</h1><p class="wz-sub">Two last choices, then you\'ll land in your dashboard to add products.</p>' +
-        '<div class="card" style="display:flex;gap:14px;align-items:center;margin-bottom:20px">' + logoBox(wizardStore(), 'store-logo', 44) +
-        '<div style="min-width:0;flex:1"><b style="font-size:16px;display:block">' + esc(d.name) + '</b><span style="color:var(--text2);font-size:13px">' + esc(PRESETS[d.category].label) + ' · ' + esc((THEME_OPTS.filter(function (t) { return t[0] === d.template; })[0] || [])[1] || '') + ' theme · ' + esc(d.currency) + '</span></div>' +
+      var addr = cloud.on ? location.host + '/s/' + slug(d.name) : '';
+      body = '<h1>Ready to go live.</h1><p class="wz-sub">' + (cloud.on ? 'We\'ll write your homepage, publish your store and set up your app. It takes a few seconds.' : 'We\'ll write your homepage and set up your store and app.') + '</p>' +
+        '<div class="card launch-summary">' + logoBox(wizardStore(), 'store-logo', 48) +
+        '<div style="min-width:0;flex:1"><b>' + esc(d.name) + '</b><span>' + esc(PRESETS[d.category].label) + (d.ownerName ? ' · by ' + esc(d.ownerName) : '') + '</span>' +
+        (addr ? '<span class="launch-url">' + icon('external', 13) + esc(addr) + '</span>' : '') + '</div>' +
         '<span class="swatch" style="background:' + esc(d.primary) + '"></span></div>' +
-        '<div class="switch-row"><div><b>Add sample products</b><small>See your store with products right away. Delete them any time.</small></div><label class="switch"><input type="checkbox" data-wz="samples"' + (d.samples ? ' checked' : '') + '><span></span></label></div>' +
-        '<div class="switch-row"><div><b>Make it an installable mobile app</b><small>Customers can add your store to their home screen with your icon.</small></div><label class="switch"><input type="checkbox" data-wz="app"' + (d.app ? ' checked' : '') + '><span></span></label></div>' +
-        (!waDigits(d.whatsapp) && !d.email ? '<div class="callout" style="margin-top:18px">' + icon('alert', 16) + '<span>Without a WhatsApp number or email, customers can\'t send you orders yet. You can add one later in Settings.</span></div>' : '');
+        '<div class="field"><label for="wz-wa">WhatsApp number for order alerts <span class="optional">(optional)</span></label><input id="wz-wa" data-wz="whatsapp" type="tel" inputmode="tel" placeholder="91 98765 43210" value="' + esc(d.whatsapp) + '"><span class="help">Orders always appear in your dashboard. Add a number to also get them on WhatsApp.</span></div>' +
+        '<div class="switch-row"><div><b>Mobile app</b><small>Customers can install your store on their phone, with your icon.</small></div><label class="switch"><input type="checkbox" data-wz="app"' + (d.app ? ' checked' : '') + '><span></span></label></div>';
     }
 
-    var canNext = s === 0 ? d.name.trim() && d.category : true;
     var hadPreview = app.querySelector('.wz-preview iframe');
     var html = '<div class="wz"><div class="wz-form"><div class="wz-top"><a class="brand" href="#/"><span class="brand-mark">' + icon('store', 16) + '</span>Sahaay <span class="brand-soft">Stores</span></a>' +
       '<div class="wz-steps">' + WZ_STEPS.map(function (_, i) { return '<i class="' + (i <= s ? 'on' : '') + '"></i>'; }).join('') + '<span style="margin-left:6px">' + (s + 1) + ' / ' + WZ_STEPS.length + '</span></div></div>' +
       '<div class="wz-body">' + body + '</div>' +
       '<div class="wz-nav">' + (s > 0 ? '<button class="btn btn-secondary btn-lg" data-action="wz-back">Back</button>' : '<a class="btn btn-quiet btn-lg" href="#/">Cancel</a>') +
+      '<div style="display:flex;gap:8px">' + (s === 1 || s === 2 ? '<button class="btn btn-quiet btn-lg" data-action="wz-next">Skip</button>' : '') +
       (s < WZ_STEPS.length - 1
-        ? '<button class="btn btn-primary btn-lg" data-action="wz-next"' + (canNext ? '' : ' disabled') + '>Continue</button>'
-        : '<button class="btn btn-brand btn-lg" data-action="wz-finish">Create my store</button>') +
-      '</div></div>' +
+        ? '<button class="btn btn-primary btn-lg" data-action="wz-next"' + (wizardCanNext() ? '' : ' disabled') + '>Continue</button>'
+        : '<button class="btn btn-brand btn-lg" data-action="wz-launch">' + (cloud.on ? 'Launch my store' : 'Create my store') + '</button>') +
+      '</div></div></div>' +
       '<aside class="wz-preview"><div class="wz-preview-label"><i></i>Live preview</div><div id="wz-phone"></div></aside></div>';
 
     if (hadPreview && app.querySelector('.wz-form')) {
@@ -383,22 +551,97 @@
       mountViews(app);
     }
     updateWizardPreview();
-    var first = app.querySelector('.wz-body input:not([type=checkbox])');
-    if (first && s !== 3 && !first.value) first.focus({ preventScroll: true });
   }
 
-  function finishWizard() {
-    var d = wz.d;
-    store = migrate(SahaayPresets.buildStore({
-      name: d.name, category: d.category, tagline: d.tagline, logo: d.logo, primary: d.primary,
-      template: d.template, font: d.font, whatsapp: d.whatsapp, upi: d.upi, cod: d.cod,
-      email: d.email, currency: d.currency, samples: d.samples, app: d.app
-    }));
-    save();
-    wz = freshWizard();
-    previewData = null;
-    location.hash = '#/admin';
-    toast('Your store is ready');
+  var LAUNCH_STEPS = ['Writing your homepage', 'Designing your store', 'Publishing it online', 'Setting up your app'];
+
+  function renderLaunching(active, error) {
+    var html = '<div class="launching"><div class="launching-card">' + logoBox(wizardStore(), 'store-logo', 56) +
+      '<h1>' + (error ? 'Something went wrong' : 'Building ' + esc(wz.d.name) + '…') + '</h1>' +
+      '<ul class="launch-steps">' + LAUNCH_STEPS.map(function (t, i) {
+        var st = i < active ? 'done' : i === active ? (error ? 'fail' : 'now') : '';
+        return '<li class="' + st + '"><span class="ls-dot">' + (st === 'done' ? icon('check', 12) : st === 'fail' ? icon('x', 12) : '') + '</span>' + t + '</li>';
+      }).join('') + '</ul>' +
+      (error ? '<p class="launch-error">' + esc(error) + '</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-secondary" data-action="wz-back-to-form">Back</button><button class="btn btn-primary" data-action="wz-launch">Try again</button></div>' : '') +
+      '</div></div>';
+    app.innerHTML = html;
+  }
+
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function atLeast(p, ms) { return Promise.all([p, wait(ms)]).then(function (r) { return r[0]; }); }
+
+  function launch() {
+    if (wz.busy) return;
+    wz.busy = true;
+    var d = wz.d, step = 0;
+    var go = function (i) { step = i; renderLaunching(i); };
+    go(0);
+    var ready = cloud.on ? Cloud.ensureUser() : Promise.resolve();
+    ready.then(function () {
+      var copy = cloud.on && cloud.ai
+        ? Cloud.generate({ category: PRESETS[d.category].label, name: d.name, description: d.description, ownerName: d.ownerName, ownerBio: d.ownerBio }).catch(function () { return null; })
+        : Promise.resolve(null);
+      return atLeast(copy, 900);
+    }).then(function (copy) {
+      go(1);
+      var next = migrate(SahaayPresets.buildStore(wizardInput({ copy: copy })));
+      next.flags.launched = true;
+      if (d.logoImg) next.flags.logoData = d.logoImg;
+      next.flags.designed = !!(d.logoImg);
+      if (store && store.slug && cloud.on) { next.slug = store.slug; }
+      store = next;
+      save({ local: true });
+      return atLeast(cloud.on ? uploadPendingImages() : Promise.resolve(), 700);
+    }).then(function () {
+      go(2);
+      save({ local: true });
+      return atLeast(cloud.on ? Cloud.saveStore(publicCopy(store)).then(function (r) {
+        store.slug = r.slug; store.url = r.url;
+        store.flags.published = true; store.flags.publishedAt = new Date().toISOString();
+      }) : Promise.resolve(), 800);
+    }).then(function () {
+      go(3);
+      var appWork = cloud.on && store.app.enabled
+        ? ensureAppIcons().then(function () { return Cloud.saveStore(publicCopy(store)); })
+        : Promise.resolve();
+      return atLeast(appWork, 700);
+    }).then(function () {
+      store.flags.appVisited = !!store.app.enabled;
+      save({ local: true });
+      wz = freshWizard();
+      previewData = null;
+      location.hash = '#/live';
+    }).catch(function (e) {
+      wz.busy = false;
+      renderLaunching(step, (e && e.message) || 'Please check your connection and try again.');
+    });
+  }
+
+  // ---------- "your store is live" ----------
+  function storeLink() {
+    return cloud.on && store.url ? store.url : new URL('preview.html', location.href).href;
+  }
+
+  function renderLaunched() {
+    document.title = store.name + ' is live · Sahaay Stores';
+    var url = storeLink();
+    var live = cloud.on && store.url;
+    var shown = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    var share = encodeURIComponent((live ? 'We\'re now online! Shop ' + store.name + ' here: ' : 'Take a look at ' + store.name + ': ') + url);
+    var user = cloud.on && Cloud.user();
+    app.innerHTML = '<div class="launched"><div class="launched-copy">' +
+      '<div class="launched-badge">' + icon('check', 18) + '</div>' +
+      '<h1>' + (live ? esc(store.name) + ' is live.' : esc(store.name) + ' is ready.') + '</h1>' +
+      '<p class="wz-sub">' + (live ? 'Your store is online now. Share the link with your customers. There\'s nothing to host or install.' : 'Your store is set up. Online hosting is switched on when Sahaay Stores runs on its platform. Until then you can preview it and download it from Publish.') + '</p>' +
+      '<div class="url-box"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shown) + '</a><button class="btn btn-secondary btn-sm" data-action="copy-url" data-url="' + esc(url) + '">' + icon('copy', 15) + 'Copy</button></div>' +
+      '<div class="launched-actions"><a class="btn btn-primary btn-lg" href="' + esc(url) + '" target="_blank" rel="noopener">' + icon('external', 16) + 'Open my store</a>' +
+      '<a class="btn btn-secondary btn-lg" href="https://wa.me/?text=' + share + '" target="_blank" rel="noopener">' + icon('chat', 16) + 'Share on WhatsApp</a></div>' +
+      '<h3 class="launched-next">Next steps</h3><ol class="next-steps">' +
+      '<li><a href="#/admin/products/new"><b>Add your first products</b><span>A photo, a name and a price. They appear on your store instantly.</span>' + icon('chevron', 16) + '</a></li>' +
+      (user && user.anonymous ? '<li><button data-action="save-access"><b>Save access to your store</b><span>Connect Google so you can manage your store from any device.</span>' + icon('chevron', 16) + '</button></li>' : '') +
+      '<li><a href="#/admin"><b>Go to your dashboard</b><span>Orders, design, your mobile app and settings.</span>' + icon('chevron', 16) + '</a></li></ol></div>' +
+      '<div class="launched-preview">' + deviceFrame('phone', live ? url : 'preview.html?embed=1', { interactive: true, live: !live }) + '</div></div>';
+    mountViews(app);
   }
 
   // ============================================================
@@ -421,7 +664,8 @@
     return groups.map(function (g) {
       return (g[0] && !mobile ? '<div class="nav-group">' + g[0] + '</div>' : '') + g[1].map(function (n) {
         var on = n[0] === sub;
-        return '<a href="#/admin' + (n[0] ? '/' + n[0] : '') + '" class="' + (on ? 'on' : '') + '">' + icon(n[2], mobile ? 20 : 17) + '<span>' + n[1] + '</span>' +
+        var label = n[0] === 'publish' && cloud.on ? 'Share' : n[1];
+        return '<a href="#/admin' + (n[0] ? '/' + n[0] : '') + '" class="' + (on ? 'on' : '') + '">' + icon(n[0] === 'publish' && cloud.on ? 'external' : n[2], mobile ? 20 : 17) + '<span>' + label + '</span>' +
           (n[0] === 'orders' && nc ? '<span class="count">' + nc + '</span>' : '') +
           (n[0] === 'app' && !store.app.enabled && !mobile ? '<span class="tag-new">NEW</span>' : '') + '</a>';
       }).join('');
@@ -457,18 +701,54 @@
     document.title = (TITLES[sub] || 'Home') + ' · ' + store.name + ' · Sahaay Stores';
     app.innerHTML = '<div class="shell">' +
       '<aside class="side"><a class="brand" href="#/"><span class="brand-mark">' + icon('store', 16) + '</span>Sahaay <span class="brand-soft">Stores</span></a>' +
-      '<div class="store-chip">' + logoBox() + '<div style="min-width:0;flex:1"><b>' + esc(store.name) + '</b><small><i class="' + (store.flags.published ? 'live' : '') + '"></i>' + (store.flags.published ? 'Published' : 'Not published yet') + '</small></div></div>' +
+      '<div class="store-chip">' + logoBox() + '<div style="min-width:0;flex:1"><b>' + esc(store.name) + '</b><small><i class="' + (store.flags.published ? 'live' : '') + '"></i>' + (cloud.on && store.slug ? 'Live · /s/' + esc(store.slug) : store.flags.published ? 'Published' : 'Not published yet') + '</small></div></div>' +
       '<nav class="nav">' + navHtml(sub) + '</nav>' +
-      '<div class="side-foot"><a class="btn btn-secondary btn-sm btn-block" href="preview.html" target="_blank" rel="noopener">' + icon('external', 15) + 'View your store</a></div></aside>' +
-      '<div class="main-col"><div class="topbar"><div class="crumbs">' + crumb + '</div>' +
-      '<a class="btn btn-quiet btn-sm" href="preview.html" target="_blank" rel="noopener">' + icon('external', 15) + 'View store</a>' +
-      (sub !== 'publish' ? '<a class="btn btn-primary btn-sm" href="#/admin/publish">' + icon('publish', 15) + 'Publish</a>' : '') + '</div>' +
-      '<div class="mobile-top">' + logoBox() + '<b>' + esc(store.name) + '</b><a class="btn btn-secondary btn-sm" href="preview.html" target="_blank" rel="noopener">View store</a></div>' +
+      '<div class="side-foot"><a class="btn btn-secondary btn-sm btn-block" href="' + esc(storeLink()) + '" target="_blank" rel="noopener">' + icon('external', 15) + 'View your store</a></div></aside>' +
+      '<div class="main-col"><div class="topbar"><div class="crumbs">' + crumb + '</div>' + syncPill() +
+      '<a class="btn btn-quiet btn-sm" href="' + esc(storeLink()) + '" target="_blank" rel="noopener">' + icon('external', 15) + 'View store</a>' +
+      (sub !== 'publish' ? '<a class="btn btn-primary btn-sm" href="#/admin/publish">' + icon(cloud.on ? 'external' : 'publish', 15) + (cloud.on ? 'Share' : 'Publish') + '</a>' : '') + '</div>' +
+      '<div class="mobile-top">' + logoBox() + '<b>' + esc(store.name) + '</b>' + syncPill() + '<a class="btn btn-secondary btn-sm" href="' + esc(storeLink()) + '" target="_blank" rel="noopener">View store</a></div>' +
       (sub === 'design' ? content : '<main class="main">' + content + '</main>') + '</div>' +
       '<nav class="bottom-nav">' + navHtml(sub, true) + '</nav></div>';
 
     previewData = null;
     mountViews(app);
+    maybeRefresh(sub);
+  }
+
+  // Live orders & stock: refreshed whenever Home, Orders or Products opens,
+  // then every 30 seconds while it stays open.
+  var lastRefresh = 0, pollTimer = 0;
+  function liveSnapshot() {
+    return JSON.stringify([store.orders, store.products.map(function (p) { return p.stock; })]);
+  }
+  function maybeRefresh(sub) {
+    clearTimeout(pollTimer);
+    var r0 = route();
+    if (!cloud.on || !store.slug || ['', 'orders', 'products'].indexOf(sub) < 0 || (sub === 'products' && r0.a)) return;
+    var run = function () {
+      lastRefresh = Date.now();
+      var before = liveSnapshot();
+      refreshFromCloud().then(function () {
+        var r = route();
+        var still = r.name === 'admin' && (r.sub || '') === sub && !r.a;
+        if (still && liveSnapshot() !== before && !app.querySelector('select:focus, input:focus')) renderAdmin(r);
+        if (still) pollTimer = setTimeout(run, 30000);
+      });
+    };
+    pollTimer = setTimeout(run, Date.now() - lastRefresh > 2000 ? 0 : 30000);
+  }
+
+  function liveCard() {
+    if (!cloud.on || !store.url) return '';
+    var shown = store.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    var user = Cloud.user();
+    return '<div class="live-card"><div class="live-dot"></div><div class="live-text"><small>Your store is live at</small>' +
+      '<a href="' + esc(store.url) + '" target="_blank" rel="noopener">' + esc(shown) + '</a></div>' +
+      '<button class="btn btn-secondary btn-sm" data-action="copy-url" data-url="' + esc(store.url) + '">' + icon('copy', 15) + 'Copy link</button>' +
+      '<a class="btn btn-secondary btn-sm" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent('Shop ' + store.name + ' online: ' + store.url) + '">' + icon('chat', 15) + 'Share</a></div>' +
+      (user && user.anonymous ? '<div class="callout callout-blue">' + icon('info', 16) + '<span style="flex:1"><b>Save access to your store.</b> Right now it\'s linked to this browser only. Connect Google to manage it from any device.</span>' +
+        '<button class="btn btn-secondary btn-sm" data-action="save-access">' + GOOGLE_G + 'Continue with Google</button></div>' : '');
   }
 
   // ---------- home ----------
@@ -477,14 +757,14 @@
     var prods = s.products || [];
     return [
       ['Create your store', true, ''],
-      ['Add 3 of your own products', prods.filter(function (p) { return !p.sample; }).length >= 3, '#/admin/products/new'],
+      ['Add ' + (cloud.on ? 'your first 3 products' : '3 of your own products'), prods.filter(function (p) { return !p.sample; }).length >= 3, '#/admin/products/new'],
       ['Add a real product photo', prods.some(function (p) { return p.images && p.images.length; }), '#/admin/products'],
       ['Set up WhatsApp or email for orders', !!(s.contact.whatsapp || s.contact.email), '#/admin/settings'],
       ['Add a payment method', !!(s.payments.upi || s.payments.cod), '#/admin/settings'],
       ['Customise your store design', !!s.flags.designed, '#/admin/design'],
       ['Set up your mobile app', !!(s.app.enabled && s.flags.appVisited), '#/admin/app'],
       ['Place a test order', (s.orders || []).some(function (o) { return o.test; }), 'preview.html'],
-      ['Publish your store', !!s.flags.published, '#/admin/publish']
+      cloud.on ? ['Share your store link with customers', !!s.flags.shared, '#/admin/publish'] : ['Publish your store', !!s.flags.published, '#/admin/publish']
     ];
   }
 
@@ -506,7 +786,8 @@
     var aov = valid ? orderRevenue(orders) / valid : 0;
 
     return '<div class="page-head"><div><h1>' + greeting() + '</h1><p>Here\'s what\'s happening with ' + esc(store.name) + '.</p></div>' +
-      '<div class="page-actions"><a class="btn btn-secondary" href="#/admin/products/new">' + icon('plus', 16) + 'Add product</a></div></div>' +
+      '<div class="page-actions"><a class="btn btn-secondary" href="#/admin/products/new">' + icon('plus', 16) + 'Add product</a></div></div>' + liveCard() +
+      (cloud.on && !store.products.length ? '<div class="callout callout-green">' + icon('products', 16) + '<span style="flex:1"><b>Add your first products.</b> Your store is online, and products you add appear on it instantly.</span><a class="btn btn-primary btn-sm" href="#/admin/products/new">' + icon('plus', 15) + 'Add product</a></div>' : '') +
       '<div class="stats">' +
       '<div class="stat"><small>Total sales</small><b>' + money(orderRevenue(orders)) + '</b></div>' +
       '<div class="stat"><small>Orders</small><b>' + orders.length + '</b></div>' +
@@ -637,12 +918,15 @@
       store.products = store.products.map(function (p) {
         if (p.id !== id) return p;
         var n = Object.assign({}, p, data);
+        // Tell the platform the owner set this stock level (vs. sales selling it down).
+        if (String(p.stock) !== String(data.stock)) n.stockSetAt = Date.now();
         delete n.sample;
         if (data.images.length) delete n.emoji;
         return n;
       });
     } else {
       data.id = uid('p');
+      data.stockSetAt = Date.now();
       store.products = (store.products || []).concat([data]);
     }
     if (save()) {
@@ -685,8 +969,10 @@
   function pageOrders() {
     var all = store.orders || [];
     var head = '<div class="page-head"><div><h1>Orders</h1><p>' + all.length + ' order' + (all.length === 1 ? '' : 's') + ' · ' + money(orderRevenue(all)) + ' in sales</p></div></div>' +
-      '<div class="callout callout-blue">' + icon('info', 16) + '<span>Orders from your <b>published</b> store arrive on WhatsApp' + (store.contact.email ? ' or email' : '') +
-      '. Test orders you place in the <a class="btn-link" href="preview.html" target="_blank">preview</a> show up here so you can practise.</span></div>';
+      (cloud.on
+        ? '<div class="callout callout-blue">' + icon('info', 16) + '<span>Orders from your live store appear here automatically. Test orders from the <a class="btn-link" href="preview.html" target="_blank">preview</a> are marked “test”.</span></div>'
+        : '<div class="callout callout-blue">' + icon('info', 16) + '<span>Orders from your <b>published</b> store arrive on WhatsApp' + (store.contact.email ? ' or email' : '') +
+          '. Test orders you place in the <a class="btn-link" href="preview.html" target="_blank">preview</a> show up here so you can practise.</span></div>');
     if (!all.length) {
       return head + '<div class="card"><div class="empty"><div class="empty-icon">' + icon('orders', 24) + '</div><h3>No orders yet</h3><p>Open your store, add something to the cart and check out to see a test order here.</p>' +
         '<a class="btn btn-primary" href="preview.html" target="_blank">' + icon('external', 15) + 'Open my store</a></div></div>';
@@ -762,6 +1048,11 @@
       text('announcement', 'Announcement bar', store.announcement, { ph: 'e.g. Free delivery on orders over ₹999', help: 'Leave empty to hide.' }) +
       text('productsHeading', 'Products heading', store.productsHeading, { max: 60 }) +
       text('about', 'About your shop', store.about, { rows: 4, ph: 'Tell customers your story.' }) + '</div>' +
+      '<div class="card"><h2>Meet the owner</h2><div class="owner-row" style="margin-bottom:14px"><label class="owner-photo">' +
+      (store.owner.photo ? '<img src="' + esc(store.owner.photo) + '" alt="">' : icon('image', 20) + '<span>Photo</span>') +
+      '<input type="file" accept="image/*" data-upload="owner-photo" hidden></label>' +
+      '<div class="field" style="flex:1;margin:0"><label>Your name</label><input data-bind="owner.name" value="' + esc(store.owner.name) + '" maxlength="60"></div></div>' +
+      text('owner.bio', 'Your story', store.owner.bio, { rows: 4, ph: 'A few lines about you and why you started.', help: 'Leave empty to hide this section.' }) + '</div>' +
 
       '<div class="card"><h2>Mobile</h2><p class="card-sub">How your store behaves on phones. Switch the preview to Phone to see it.</p>' +
       switchRow('theme.mobile.bottomNav', 'Bottom navigation bar', 'App-style tabs for Home, Shop, Search, Cart and Chat', m.bottomNav !== false) +
@@ -891,6 +1182,15 @@
       '<div class="field" style="margin-bottom:0"><label for="st-free">Free delivery over</label><div class="input-prefix"><span>' + esc(store.currency) + '</span><input id="st-free" name="freeAbove" type="number" min="0" step="0.01" value="' + esc(sh.freeAbove || '') + '" placeholder="Optional"></div></div></div></div>' +
 
       '<div class="save-bar"><span>Store settings</span><button class="btn btn-light btn-sm" type="submit">Save</button></div></form>' +
+      (cloud.on ? '<div class="card" style="max-width:760px;margin-top:28px"><h2>Store address & account</h2>' +
+        '<div class="url-box" style="margin-bottom:14px"><a href="' + esc(store.url || '') + '" target="_blank" rel="noopener">' + esc(String(store.url || 'Publishing…').replace(/^https?:\/\//, '')) + '</a></div>' +
+        (function () {
+          var u = Cloud.user();
+          if (!u) return '';
+          return u.anonymous
+            ? '<p class="card-sub" style="margin:0 0 12px">Your store is linked to this browser only.</p><button class="btn btn-secondary btn-sm" data-action="save-access">' + GOOGLE_G + 'Save access with Google</button>'
+            : '<p class="card-sub" style="margin:0 0 12px">Signed in as <b>' + esc(u.email) + '</b>.</p><button class="btn btn-secondary btn-sm" data-action="sign-out">Sign out on this device</button>';
+        })() + '</div>' : '') +
 
       '<div class="card" style="max-width:760px;margin-top:28px;box-shadow:0 0 0 1px color-mix(in srgb,var(--red) 35%,transparent)"><h2>Delete store</h2><p class="card-sub" style="margin-top:0">Permanently remove this store, its products and orders from this browser. Download a backup from Publish first if you might want it back.</p>' +
       '<button class="btn btn-danger btn-sm" data-action="delete-store">' + icon('trash', 15) + 'Delete store</button></div>';
@@ -917,7 +1217,35 @@
   }
 
   // ---------- publish ----------
+  // Hosted platform: nothing to publish — the store is already online.
+  function pagePublishCloud() {
+    var url = store.url || '';
+    var shown = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    var msg = encodeURIComponent('Shop ' + store.name + ' online: ' + url);
+    return '<div class="page-head"><div><h1>Share your store</h1><p>Your store is online. Every change you make is published automatically.</p></div></div>' +
+      '<div class="two-col"><div>' +
+      '<div class="card"><h2>Your store link</h2>' +
+      '<div class="url-box"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(shown || 'Publishing…') + '</a><button class="btn btn-secondary btn-sm" data-action="copy-url" data-url="' + esc(url) + '">' + icon('copy', 15) + 'Copy</button></div>' +
+      '<div class="share-grid">' +
+      '<a class="share-opt" data-action="shared" href="https://wa.me/?text=' + msg + '" target="_blank" rel="noopener">' + icon('chat', 20) + '<b>WhatsApp</b><span>Send to customers or post on your Status</span></a>' +
+      '<a class="share-opt" data-action="shared" href="' + esc(url) + '" target="_blank" rel="noopener">' + icon('external', 20) + '<b>Instagram bio</b><span>Copy the link into your profile</span></a>' +
+      '<a class="share-opt" data-action="shared" href="https://business.google.com/" target="_blank" rel="noopener">' + icon('store', 20) + '<b>Google Business</b><span>Add it as your website</span></a></div></div>' +
+      '<div class="card"><h2>Your mobile app</h2><p class="card-sub" style="margin-top:0">' + (store.app.enabled
+        ? 'Customers who open your link on a phone are invited to install your app. There\'s nothing for you to upload.'
+        : 'Turn on your app so customers can install your store on their phone.') + '</p>' +
+      '<a class="btn btn-secondary btn-sm" href="#/admin/app">' + (store.app.enabled ? 'App settings' : 'Turn on the app') + '</a></div></div>' +
+      '<div><div class="card"><h2>How it works</h2><ol class="publish-steps">' +
+      '<li><b>Always online.</b> Your store is hosted for you. No servers, files or renewals.</li>' +
+      '<li><b>Changes go live automatically</b> a moment after you make them.</li>' +
+      '<li><b>Orders arrive in your dashboard</b>' + (store.contact.whatsapp ? ', and customers can also send them to your WhatsApp' : '') + '. Stock goes down with every sale.</li>' +
+      '<li><b>Payments go straight to you</b> by UPI or cash on delivery.</li></ol></div>' +
+      '<div class="card"><h2>Advanced</h2><p class="card-sub" style="margin-top:0">Want a copy to keep or host yourself?</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-action="download-zip">' + icon('download', 15) + 'Download site</button>' +
+      '<button class="btn btn-secondary btn-sm" data-action="backup">' + icon('download', 15) + 'Download backup</button></div></div></div></div>';
+  }
+
   function pagePublish() {
+    if (cloud.on) return pagePublishCloud();
     var checks = [
       [!!(store.contact.whatsapp || store.contact.email), 'Customers can send you orders', 'Add a WhatsApp number or email in <a class="btn-link" href="#/admin/settings">Settings</a>.'],
       [(store.products || []).some(function (p) { return p.active !== false; }), 'Store has visible products', 'Add at least one active product.'],
@@ -1056,6 +1384,7 @@
   function loadImage(src) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
+      if (/^https?:/.test(src)) img.crossOrigin = 'anonymous';
       img.onload = function () { resolve(img); };
       img.onerror = reject;
       img.src = src;
@@ -1063,14 +1392,17 @@
   }
 
   // Draws the app icon: uploaded icon (cover), or logo/emoji on the brand colour.
-  function renderIcon(size, maskable) {
+  // format: 'bytes' (Uint8Array, for the ZIP) or 'dataurl' (for upload).
+  function renderIcon(size, maskable, format) {
     var a = store.app, bg = a.bg || store.theme.primary;
     var c = document.createElement('canvas');
     c.width = c.height = size;
     var x = c.getContext('2d');
     x.fillStyle = bg;
     x.fillRect(0, 0, size, size);
-    var src = a.icon || (isImg(store.logo) ? store.logo : null);
+    // Prefer this browser's original copy of the image: a remote copy can
+    // only be drawn if its host allows cross-origin reads.
+    var src = a.icon ? (store.flags.appIconData || a.icon) : isImg(store.logo) ? (store.flags.logoData || store.logo) : null;
     var done = src ? loadImage(src).then(function (img) {
       var pad = a.icon ? (maskable ? size * 0.1 : 0) : size * (maskable ? 0.24 : 0.16);
       var box = size - pad * 2;
@@ -1089,6 +1421,7 @@
       x.fillText(store.logo || '🛍️', size / 2, size / 2 + size * 0.035);
     });
     return done.then(function () {
+      if (format === 'dataurl') return c.toDataURL('image/png');
       return new Promise(function (resolve) {
         c.toBlob(function (b) { b.arrayBuffer().then(function (buf) { resolve(new Uint8Array(buf)); }); }, 'image/png');
       });
@@ -1181,10 +1514,37 @@
       case 'wz-cat': applyPreset(t.getAttribute('data-cat')); renderWizard(); break;
       case 'wz-set': wz.d[t.getAttribute('data-k')] = t.getAttribute('data-v'); renderWizard(); break;
       case 'wz-next':
-        if (wz.step === 0 && (!wz.d.name.trim() || !wz.d.category)) return;
+        if (!wizardCanNext()) return;
         wz.step++; renderWizard(); window.scrollTo(0, 0); break;
       case 'wz-back': wz.step--; renderWizard(); break;
-      case 'wz-finish': finishWizard(); break;
+      case 'wz-back-to-form': app.innerHTML = ''; renderWizard(); break;
+      case 'wz-rm-logo': wz.d.logoImg = ''; renderWizard(); break;
+      case 'wz-launch': launch(); break;
+
+      // hosted platform
+      case 'shared': if (store) { store.flags.shared = true; save({ local: true }); } break;
+      case 'copy-url': {
+        var u = t.getAttribute('data-url');
+        if (store) { store.flags.shared = true; save({ local: true }); }
+        (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { toast('Link copied'); }, function () { prompt('Copy your store link:', u); });
+        break;
+      }
+      case 'save-access':
+        Cloud.saveAccessWithGoogle().then(function () {
+          toast('Saved. Sign in with Google on any device.');
+          render();
+        }, function (e) { if (e && e.code !== 'auth/popup-closed-by-user') toast(e.message || 'Couldn\'t connect Google', 'alert'); });
+        break;
+      case 'login-google':
+        Cloud.signInWithGoogle().then(afterSignIn, function (e) { if (e && e.code !== 'auth/popup-closed-by-user') toast(e.message || 'Sign-in failed', 'alert'); });
+        break;
+      case 'sync-now': runSync(); break;
+      case 'sign-out':
+        if (!confirm('Sign out on this device? Your store stays online.')) return;
+        Cloud.signOut().then(function () {
+          localStorage.removeItem(KEY); store = null; location.hash = '#/';
+        });
+        break;
 
       // admin
       case 'go': location.hash = t.getAttribute('data-href'); break;
@@ -1210,10 +1570,14 @@
         if (save()) { draftFor = null; toast('Product duplicated'); location.hash = '#/admin/products/edit/' + copy.id; }
         break;
       }
-      case 'del-order':
+      case 'del-order': {
         if (!confirm('Delete this order?')) return;
+        var gone = store.orders.filter(function (o) { return o.id === id; })[0];
         store.orders = store.orders.filter(function (o) { return o.id !== id; });
-        save(); render(); break;
+        save({ local: true }); render();
+        if (gone && gone.cloud) Cloud.deleteOrder(id).catch(function (e) { toast(e.message, 'alert'); });
+        break;
+      }
 
       // design
       case 'set-theme':
@@ -1277,10 +1641,8 @@
     if (wzKey) {
       if (t.type === 'checkbox') return;   // handled on change
       wz.d[wzKey] = t.value;
-      if (wzKey === 'name') {
-        var btn = app.querySelector('[data-action="wz-next"]');
-        if (btn) btn.disabled = !(wz.d.name.trim() && wz.d.category);
-      }
+      var btn = app.querySelector('.wz-nav .btn-primary[data-action="wz-next"]');
+      if (btn) btn.disabled = !wizardCanNext();
       if (wzKey === 'primary') app.querySelectorAll('.swatch.on').forEach(function (x) { x.classList.remove('on'); });
       updateWizardPreview();
       return;
@@ -1320,7 +1682,11 @@
     if (t.getAttribute('data-bind') && t.tagName === 'SELECT') { setPath(t.getAttribute('data-bind'), t.value); scheduleSave(); return; }
     if (t.getAttribute('data-input') === 'order-status') {
       var o = store.orders.filter(function (x) { return x.id === t.getAttribute('data-id'); })[0];
-      if (o) { o.status = t.value; save(); toast('Marked as ' + t.options[t.selectedIndex].text.toLowerCase()); render(); }
+      if (o) {
+        o.status = t.value; save({ local: true });
+        toast('Marked as ' + t.options[t.selectedIndex].text.toLowerCase()); render();
+        if (o.cloud) Cloud.updateOrder(o.id, o.status).catch(function (e) { toast(e.message, 'alert'); });
+      }
       return;
     }
 
@@ -1328,24 +1694,41 @@
     if (!up || !t.files || !t.files.length) return;
     var files = Array.prototype.slice.call(t.files);
 
-    if (up === 'product') {
+    if (up === 'wz-owner-photo' || up === 'wz-logo') {
+      compressImage(files[0], up === 'wz-logo' ? 256 : 600, 0.88).then(function (u) {
+        if (up === 'wz-logo') wz.d.logoImg = u; else wz.d.ownerPhoto = u;
+        renderWizard();
+      }).catch(function () { toast('Please choose an image file', 'alert'); });
+    } else if (up === 'owner-photo') {
+      compressImage(files[0], 600, 0.88).then(storeImage).then(function (u) {
+        store.owner.photo = u; save(); render();
+      }).catch(function () { toast('Please choose an image file', 'alert'); });
+    } else if (up === 'product') {
       files = files.slice(0, 4 - draftImages.length);
-      Promise.all(files.map(function (f) { return compressImage(f, 1200, 0.8).catch(function () { return null; }); })).then(function (urls) {
+      var tiles = document.getElementById('pf-imgs');
+      if (tiles && cloud.on) tiles.insertAdjacentHTML('beforeend', '<div class="img-tile img-uploading"><span>Uploading…</span></div>');
+      Promise.all(files.map(function (f) { return compressImage(f, 1200, 0.8).then(storeImage).catch(function () { return null; }); })).then(function (urls) {
         urls.forEach(function (u) { if (u) draftImages.push(u); });
         if (urls.some(function (u) { return !u; })) toast('Some files weren\'t images and were skipped', 'alert');
         var box = document.getElementById('pf-imgs');
         if (box) box.innerHTML = imgTiles();
       });
     } else if (up === 'logo') {
-      compressImage(files[0], 256, 0.9).then(function (u) {
+      compressImage(files[0], 256, 0.9).then(function (d) {
+        store.flags.logoData = d;
+        return storeImage(d);
+      }).then(function (u) {
         store.logo = u; store.flags.designed = true; save(); render();
       }).catch(function () { toast('Please choose an image file', 'alert'); });
     } else if (up === 'app-icon') {
-      compressImage(files[0], 512, 0.92).then(function (u) {
+      compressImage(files[0], 512, 0.92).then(function (d) {
+        store.flags.appIconData = d;
+        return storeImage(d);
+      }).then(function (u) {
         store.app.icon = u; if (save()) render(); else store.app.icon = '';
       }).catch(function () { toast('Please choose an image file', 'alert'); });
     } else if (up === 'hero') {
-      compressImage(files[0], 1800, 0.8).then(function (u) {
+      compressImage(files[0], 1800, 0.8).then(storeImage).then(function (u) {
         store.hero.image = u; store.flags.designed = true;
         if (save()) render(); else store.hero.image = '';
       }).catch(function () { toast('Please choose an image file', 'alert'); });
@@ -1385,4 +1768,23 @@
   });
 
   render();
+
+  // Detect the hosted platform. Without it (e.g. plain GitHub Pages) the
+  // builder keeps working in download-and-self-host mode.
+  Cloud.init().then(function (info) {
+    cloud.on = info.enabled;
+    cloud.ai = info.ai;
+    if (!cloud.on) return;
+    document.querySelectorAll('[data-signin]').forEach(function (el) { el.hidden = !!store; });
+    if (store) {
+      store.flags.launched = true;
+      (Cloud.user() ? Promise.resolve() : Cloud.ensureUser()).then(function () {
+        if (store.slug) refreshFromCloud().then(function () { if (route().name === 'admin') render(); });
+        else queueSync(0);   // a store made before hosting was available: publish it now
+      });
+    }
+    var r = route();
+    if (r.name === 'setup') renderWizard();
+    else if (r.name !== 'landing') render();
+  });
 })();

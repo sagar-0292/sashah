@@ -1,0 +1,10 @@
+rules_version = '2';
+// Uploads go through /api/upload (firebase-admin). Images are served with
+// download-token URLs, so no public list/read rule is needed here.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

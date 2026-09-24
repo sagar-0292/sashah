@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    { "source": "/s/:slug/manifest.webmanifest", "destination": "/api/manifest?slug=:slug" },
+    { "source": "/s/:slug/sw.js", "destination": "/store-sw.js" },
+    { "source": "/s/:slug", "destination": "/api/render?slug=:slug" },
+    { "source": "/s/:slug/", "destination": "/api/render?slug=:slug" }
+  ],
+  "headers": [
+    { "source": "/store-sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/(storefront.js|storefront.css)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }] }
+  ],
+  "functions": {
+    "api/generate.js": { "maxDuration": 30 },
+    "api/upload.js": { "maxDuration": 15 },
+    "api/stores.js": { "maxDuration": 10 },
+    "api/orders.js": { "maxDuration": 10 },
+    "api/render.js": { "maxDuration": 10 },
+    "api/manifest.js": { "maxDuration": 10 }
+  }
+}

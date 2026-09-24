@@ -91,6 +91,9 @@
     return L > 0.4 ? '#111' : '#fff';
   }
 
+  // Logos are either an emoji or an image (uploaded URL or inline data).
+  function isImgUrl(s) { return /^(data:|https?:|\/)/.test(String(s || '')); }
+
   function inStock(p) { return p.stock == null || p.stock === '' || Number(p.stock) > 0; }
   function maxQty(p) { return (p.stock == null || p.stock === '') ? 99 : Math.max(0, Number(p.stock)); }
   function waDigits(n) { return String(n || '').replace(/\D/g, ''); }
@@ -185,7 +188,7 @@
     function mob() { return (store.theme && store.theme.mobile) || {}; }
 
     function logoMark(cls) {
-      return store.logo && store.logo.indexOf('data:') === 0
+      return isImgUrl(store.logo)
         ? '<img src="' + esc(store.logo) + '" alt="" class="' + cls + ' sf-logo-img">'
         : '<span class="' + cls + ' sf-logo-emoji">' + esc(store.logo || '🛍️') + '</span>';
     }
@@ -215,7 +218,7 @@
         '<a class="sf-brand" href="#" data-sf="home">' + logoMark('sf-logo') + '<span class="sf-brand-name">' + esc(store.name || 'My Store') + '</span></a>' +
         '<nav class="sf-nav"><a href="#sf-products" data-sf="cat-nav" data-cat="">Shop all</a>' +
         (cats.length > 1 ? cats.slice(0, 3).map(function (c) { return '<a href="#sf-products" data-sf="cat-nav" data-cat="' + esc(c) + '">' + esc(c) + '</a>'; }).join('') : '') +
-        (store.about ? '<a href="#sf-about" data-sf="scroll" data-to="sf-about">About</a>' : '') +
+        (store.about || (store.owner && store.owner.bio) ? '<a href="#sf-about" data-sf="scroll" data-to="sf-about">About</a>' : '') +
         '<a href="#sf-footer" data-sf="scroll" data-to="sf-footer">Contact</a></nav>' +
         '<div class="sf-header-actions"><button class="sf-icon-btn sf-hide-sm" data-sf="focus-search" aria-label="Search">' + icon('search') + '</button>' +
         '<button class="sf-icon-btn sf-cart-btn" data-sf="open-cart" aria-label="Cart, ' + count + ' items">' + icon('bag') +
@@ -236,10 +239,15 @@
         if (h.image) media = '<img class="sf-hero-photo" src="' + esc(h.image) + '" alt="">';
         else {
           var feat = products().slice(0, 3);
-          if (!feat.length) feat = [{ id: store.name, title: store.name, emoji: store.logo && store.logo.indexOf('data:') !== 0 ? store.logo : '' }];
-          media = '<div class="sf-collage sf-collage-' + feat.length + '">' + feat.map(function (p) {
-            return '<div class="sf-collage-item">' + visual(p, 'sf-collage-img') + '</div>';
-          }).join('') + '</div>';
+          if (!feat.length && isImgUrl(store.logo)) {
+            // A brand-new store with no products yet: feature the logo.
+            media = '<div class="sf-collage sf-collage-1"><div class="sf-collage-item sf-collage-logo"><img src="' + esc(store.logo) + '" alt="' + esc(store.name) + '"></div></div>';
+          } else {
+            if (!feat.length) feat = [{ id: store.name, title: store.name, emoji: store.logo || '' }];
+            media = '<div class="sf-collage sf-collage-' + feat.length + '">' + feat.map(function (p) {
+              return '<div class="sf-collage-item">' + visual(p, 'sf-collage-img') + '</div>';
+            }).join('') + '</div>';
+          }
         }
         return '<section class="sf-hero sf-hero-split"><div class="sf-wrap sf-hero-grid">' + text + '<div class="sf-hero-media">' + media + '</div></div></section>';
       }
@@ -296,9 +304,16 @@
     }
 
     function about() {
-      if (!store.about) return '';
-      return '<section class="sf-section sf-about" id="sf-about"><div class="sf-wrap sf-about-in"><div class="sf-eyebrow">Our story</div>' +
-        '<p class="sf-about-text">' + esc(store.about).replace(/\n/g, '<br>') + '</p></div></section>';
+      var o = store.owner || {};
+      var story = store.about ? '<div class="sf-wrap sf-about-in"><div class="sf-eyebrow">Our story</div>' +
+        '<p class="sf-about-text">' + esc(store.about).replace(/\n/g, '<br>') + '</p></div>' : '';
+      var initials = String(o.name || store.name || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+      var owner = o.bio ? '<div class="sf-wrap"><div class="sf-owner">' +
+        '<div class="sf-owner-photo">' + (o.photo ? '<img src="' + esc(o.photo) + '" alt="' + esc(o.name || '') + '" loading="lazy">' : '<span>' + esc(initials) + '</span>') + '</div>' +
+        '<div class="sf-owner-text"><div class="sf-eyebrow">Meet the ' + (o.role ? esc(o.role) : 'owner') + '</div>' +
+        (o.name ? '<h3>' + esc(o.name) + '</h3>' : '') + '<p>' + esc(o.bio).replace(/\n/g, '<br>') + '</p></div></div></div>' : '';
+      if (!story && !owner) return '';
+      return '<section class="sf-section sf-about" id="sf-about">' + story + owner + '</section>';
     }
 
     function footer() {
@@ -316,7 +331,7 @@
           return '<a href="#sf-products" data-sf="cat-nav" data-cat="' + esc(x) + '">' + esc(x) + '</a>';
         }).join('') + '</div>' +
         '<div class="sf-footer-col"><h4>Contact</h4>' + (links.join('') || '<span>—</span>') + (c.address ? '<address>' + esc(c.address).replace(/\n/g, '<br>') + '</address>' : '') + '</div>' +
-        '</div><div class="sf-footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(store.name) + '</span><span>Powered by Sahaay Stores</span></div></div></footer>';
+        '</div><div class="sf-footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(store.name) + '</span>' + (opts.poweredUrl ? '<a href="' + esc(opts.poweredUrl) + '" target="_blank" rel="noopener">Powered by Sahaay Stores</a>' : '<span>Powered by Sahaay Stores</span>') + '</div></div></footer>';
     }
 
     function bottomNav() {
@@ -433,6 +448,7 @@
         '<div class="sf-order-box"><h4>Order summary</h4>' + cartLines().map(function (l) {
           return '<div class="sf-os-line"><div class="sf-os-media">' + visual(l.p, 'sf-line-img') + '<i>' + l.qty + '</i></div><span>' + esc(l.p.title) + '</span><b>' + cur(l.p.price * l.qty) + '</b></div>';
         }).join('') + '<div class="sf-os-sums">' + summaryRows(t) + '</div>' +
+        '<div class="sf-form-error" role="alert" hidden></div>' +
         '<button class="sf-btn sf-btn-block sf-btn-lg" type="submit">Place order</button>' +
         '<p class="sf-fine">You\'ll confirm your order with ' + esc(store.name) + ' on the next screen.</p></div></div></form>';
     }
@@ -539,11 +555,25 @@
       try {
         localStorage.setItem('sahaay-buyer', JSON.stringify({ name: o.customer.name, phone: o.customer.phone, address: o.customer.address }));
       } catch (e) { /* ignore */ }
-      if (typeof opts.onOrder === 'function') opts.onOrder(o);
-      state.cart = [];
-      saveCart();
-      state.modal = { type: 'done', order: o };
-      render();
+      // onOrder may return a promise (hosted stores confirm with the server,
+      // which assigns the final order number and checks stock).
+      var result = typeof opts.onOrder === 'function' ? opts.onOrder(o) : null;
+      var btn = form.querySelector('button[type=submit]');
+      var err = form.querySelector('.sf-form-error');
+      var finish = function (saved) {
+        state.cart = [];
+        saveCart();
+        state.modal = { type: 'done', order: saved && saved.id ? saved : o };
+        render();
+      };
+      if (result && typeof result.then === 'function') {
+        if (btn) { btn.disabled = true; btn.textContent = 'Placing order…'; }
+        if (err) err.hidden = true;
+        result.then(finish, function (e) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Place order'; }
+          if (err) { err.textContent = (e && e.message) || 'We couldn\'t place your order. Please try again.'; err.hidden = false; }
+        });
+      } else finish(o);
     }
 
     function scrollToId(id) {

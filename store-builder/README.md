@@ -1,22 +1,22 @@
 # 🛍️ Sahaay Stores: online stores and mobile apps for small businesses
 
-A Shopify-style builder for small businesses, home sellers and local shops. Owners set up a store in a few minutes, add products and choose a design. They then publish a real online store that also installs as a **mobile app** and takes orders over **WhatsApp**, with payment by **UPI** or **cash on delivery**.
+A Shopify-style builder for small businesses, home sellers and local shops. Owners answer four questions and their store goes **live automatically**, hosted for them, with a **mobile app**, AI-written homepage, live orders and payment by **UPI** or **cash on delivery**.
 
-It has no backend, no signup and no build step, and it doesn't depend on the other projects in this repo.
+Frontend: plain HTML/CSS/JS with no build step. Backend: Vercel functions with Firebase. It doesn't depend on the other projects in this repo.
 
 ## What it does
 
 | Area | Features |
 |---|---|
 | **Landing page** | High-end marketing site. The device mockups show real, working demo stores, not screenshots |
-| **Setup wizard** | Split screen with a **live phone preview** that updates as you type. 8 business types, each with its own theme, font, colour, copy and 6 sample products |
+| **Setup** | Four questions (business type, description, owner bio, optional logo & colours) with a **live phone preview**, then an automatic launch: AI-written homepage, store published at its own link, app icons generated |
 | **Home** | Sales stats, a 9-step launch checklist, recent orders, a live store preview and the app status |
 | **Orders** | Status tabs with counts, expandable order details, status changes, and one-tap WhatsApp or call to the customer |
 | **Products** | Search and status tabs. Up to 4 photos each (compressed in the browser), compare-at price with an automatic discount %, stock with "Only N left" and "Sold out", categories, hide, duplicate |
 | **Online store (design)** | Classic, Editorial and Bold themes, 8 brand colours or a custom one, 5 font pairings, emoji or uploaded logo, split or centred banner, announcement bar and about text. **Desktop / tablet / phone preview** in real device frames |
 | **Mobile views** | Settings for the store on phones: app-style bottom navigation bar, sticky "Add to cart" bar, 1 or 2 products per row |
 | **Mobile app** | Turns the store into an installable PWA: app name, short name, icon (built from your logo or uploaded), launch-screen colour, and a "Get the app" install banner. Previews the home screen, launch screen and the app itself. Explains how to package it for Google Play and the App Store with PWABuilder |
-| **Publish** | Downloads a **ZIP** with `index.html`, `manifest.webmanifest`, `sw.js` and PNG icons (192, 512, maskable, Apple touch), or a single `index.html`. Has a readiness check, Netlify Drop and GitHub Pages instructions, and JSON backup and restore |
+| **Share / Publish** | Hosted: the live link with copy and WhatsApp share (changes publish automatically). Download mode: a ZIP with the site, manifest, service worker and icons. Both modes have JSON backup |
 
 **The customer's store** has:
 - a sticky header with category navigation, a trust strip (delivery, payment, support) and product cards with a hover second photo and quick-add
@@ -28,40 +28,57 @@ On phones, product pages and checkout open as full-screen sheets.
 
 ## How it works
 
+### Hosted mode (the product)
+
+Owners answer **four questions**: what kind of business it is, a short description, a few lines about themselves, and optionally a logo and colours. Then:
+
+1. They get an invisible (anonymous) account, so there's no signup form.
+2. `/api/generate` has Gemini write the homepage (headline, tagline, "Our story", a polished bio) from their own words.
+3. The store is saved and **published at once** at `/s/{store-name}/`. Photos go to Firebase Storage and app icons are generated.
+4. From then on, **every edit republishes automatically** (see the "Live · saved" status in the dashboard).
+5. **Customer orders go to the server.** Prices and stock are re-checked there, stock goes down, and orders show up in the owner's dashboard.
+6. The dashboard nudges owners to **"Save access with Google"**, which upgrades the same account so they can sign in on any device.
+
 ```
 store-builder/
-├── index.html       ← landing page + builder app shell
-├── style.css        ← builder/landing design system (light + dark)
-├── app.js           ← wizard, dashboard, products, orders, design, mobile app, settings, publish (ZIP + PWA)
-├── presets.js       ← business-type presets, store factory, demo stores
-├── storefront.js    ← the customer-facing store renderer (no dependencies)
-├── storefront.css   ← store themes, all scoped under .sf
-└── preview.html     ← renders a store: yours, a demo (?demo=decor), a wizard draft (?draft=1), or app mode (?app=1)
+├── index.html · style.css · app.js   ← landing page + builder (wizard, dashboard)
+├── cloud.js · config.js              ← sign-in and API client; Firebase web config
+├── storefront.js · storefront.css    ← the customer-facing store (shared by preview, hosting and export)
+├── presets.js                        ← business-type presets, store factory, demo stores
+├── preview.html                      ← previews (own store, drafts, demos, app mode)
+├── store-sw.js                       ← offline/app service worker for hosted stores
+├── api/                              ← Vercel serverless functions
+│   ├── stores.js     save/publish a store, fetch public or own store
+│   ├── orders.js     place orders (server-priced, stock-checked), list/update/delete
+│   ├── upload.js     image uploads to Firebase Storage
+│   ├── generate.js   AI homepage copy (Gemini)
+│   ├── render.js     serves /s/{slug}/ with real title/og tags for link previews
+│   ├── manifest.js   per-store PWA manifest
+│   └── _lib.js       auth, Firestore/Storage (or in-memory for dev), slugs, rate limits
+├── vercel.json · package.json · firestore.rules · storage.rules
+└── dev-server.js                     ← run the whole platform locally, no accounts needed
 ```
 
-- All store data is one JSON object in `localStorage` (`sahaay-stores:v1`). Older saved stores are migrated automatically.
-- Previews are real iframes of `preview.html`, scaled into device frames, so phone and tablet media queries behave exactly as they do on a real device. Unsaved edits reach them through `postMessage`.
-- **Publish** inlines `storefront.js` and `storefront.css` together with the store data into `index.html`. Orders and customer details are always removed. With the app turned on, it also generates the manifest, a service worker (network-first with an offline fallback) and the icons, drawn on a canvas. These are packed with a small built-in ZIP writer.
-- Products without photos get a "studio shot" placeholder: a muted backdrop, the product's emoji and a soft floor shadow.
+Firestore layout: `stores/{slug}` (store + owner), `stores/{slug}/orders/{id}`, `owners/{uid}`. Browsers never touch the database directly (the rules deny all access); only the API does.
+
+**To go live, follow [SETUP.md](SETUP.md)** (Firebase + Vercel, about an hour, once).
+
+### Download mode (fallback)
+
+With no API available (e.g. GitHub Pages), the builder still works. The store is saved in the browser, and **Publish** downloads a ZIP (site + PWA manifest, service worker, icons) to host anywhere.
 
 ## Run locally
 
-Any static server works. Publishing uses `fetch()`, so opening the file directly with `file://` isn't enough:
-
 ```bash
 cd store-builder
-python3 -m http.server 8000
-# open http://localhost:8000
+node dev-server.js     # full hosted platform, in-memory data → http://localhost:3000
 ```
-
-It's also deployed with the rest of the repo by the existing GitHub Pages workflow, at `/store-builder/`.
 
 ## Limits
 
-- The builder saves data **per browser**. Owners use **Publish → Download backup** to move between devices.
-- A published store is a **snapshot**. After changing products or stock, the owner downloads it again and re-uploads it. Installed apps pick up the update the next time they open.
-- Live orders arrive on WhatsApp or email rather than in the dashboard, and stock isn't reduced automatically on the live site.
-- Listing in Google Play or the App Store needs the owner's own developer accounts. PWABuilder does the packaging.
+- Stores live at `/s/{name}/` on your domain. Per-store subdomains and custom domains are a later upgrade.
+- Orders arrive in the dashboard (refreshed on open and every 30 seconds). Email or push alerts to owners aren't built yet; customers can also send the order on WhatsApp.
+- Online card payments (Razorpay) aren't built yet: UPI to the owner's ID, or cash on delivery.
 
 ## Ideas for next steps
 

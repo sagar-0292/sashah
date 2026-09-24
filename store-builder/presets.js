@@ -111,15 +111,31 @@
 
   function uid(prefix) { return (prefix || '') + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-  /* Build a complete store object from a business type plus the owner's choices. */
+  function firstSentence(text, max) {
+    var t = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!t) return '';
+    var m = t.match(/^(.+?[.!?])(\s|$)/);
+    t = m ? m[1] : t;
+    max = max || 110;
+    return t.length > max ? t.slice(0, max - 1).replace(/\s+\S*$/, '') + '…' : t;
+  }
+
+  /* Build a complete store object from a business type plus the owner's
+   * answers. `o.copy` (optional) is AI-written homepage text from
+   * /api/generate; without it we fall back to the preset's copy and the
+   * owner's own words. */
   function buildStore(o) {
     var p = PRESETS[o.category] || PRESETS.other;
+    var c = o.copy || {};
     var name = (o.name || '').trim() || 'My Store';
+    var description = (o.description || '').trim();
+    var tagline = (c.tagline || o.tagline || firstSentence(description, 90) || '').trim();
     return {
       id: o.id || uid('s'),
       createdAt: new Date().toISOString(),
       name: name,
-      tagline: (o.tagline || '').trim(),
+      tagline: tagline,
+      description: description,
       category: o.category || 'other',
       logo: o.logo || p.emoji,
       currency: o.currency || 'INR',
@@ -129,10 +145,14 @@
         font: o.font || p.font,
         mobile: { bottomNav: true, stickyBuy: true, columns: 2 }
       },
-      hero: { layout: o.layout || p.layout, eyebrow: p.eyebrow, heading: p.hero, subheading: (o.tagline || '').trim(), cta: 'Shop now', image: '' },
-      productsHeading: p.productsHeading,
+      hero: {
+        layout: o.layout || p.layout, eyebrow: c.eyebrow || p.eyebrow, heading: c.heroHeading || p.hero,
+        subheading: c.heroSubheading || tagline, cta: 'Shop now', image: ''
+      },
+      productsHeading: c.productsHeading || p.productsHeading,
       announcement: o.announcement || '',
-      about: p.about,
+      about: c.about || description || p.about,
+      owner: { name: (o.ownerName || '').trim(), bio: (c.ownerBio || o.ownerBio || '').trim(), photo: o.ownerPhoto || '' },
       contact: { whatsapp: String(o.whatsapp || '').replace(/\D/g, ''), phone: '', email: (o.email || '').trim(), instagram: '', address: '' },
       payments: { upi: (o.upi || '').trim(), cod: o.cod !== false },
       shipping: { flat: o.flat || 0, freeAbove: o.freeAbove || 0 },
@@ -146,11 +166,11 @@
   }
 
   var DEMOS = {
-    decor: function () { return buildStore({ id: 'demo-decor', name: 'Ember & Oak', category: 'home', tagline: 'Handcrafted homeware from independent Indian makers', announcement: 'Free shipping on orders over ₹2,000', freeAbove: 2000, whatsapp: '910000000000', upi: 'emberandoak@upi' }); },
-    bakery: function () { return buildStore({ id: 'demo-bakery', name: 'Crumb & Co.', category: 'food', tagline: 'Small-batch bakes, delivered warm across Pune', flat: 40, freeAbove: 499, whatsapp: '910000000000', upi: 'crumbco@upi' }); },
+    decor: function () { return buildStore({ id: 'demo-decor', name: 'Ember & Oak', category: 'home', ownerName: 'Meera Iyer', ownerBio: 'I spent ten years sourcing for design studios before starting Ember & Oak from my living room. Every piece here comes from a maker I have met in person.', tagline: 'Handcrafted homeware from independent Indian makers', announcement: 'Free shipping on orders over ₹2,000', freeAbove: 2000, whatsapp: '910000000000', upi: 'emberandoak@upi' }); },
+    bakery: function () { return buildStore({ id: 'demo-bakery', name: 'Crumb & Co.', category: 'food', ownerName: 'Rohan Deshpande', ownerBio: 'I started baking for friends during college and never stopped. Everything is made in small batches in my home kitchen in Pune.', tagline: 'Small-batch bakes, delivered warm across Pune', flat: 40, freeAbove: 499, whatsapp: '910000000000', upi: 'crumbco@upi' }); },
     tech: function () { return buildStore({ id: 'demo-tech', name: 'Voltline', category: 'electronics', tagline: 'Genuine gadgets with same-day delivery', announcement: 'Same-day delivery in Bengaluru', whatsapp: '910000000000', upi: 'voltline@upi' }); },
     beauty: function () { return buildStore({ id: 'demo-beauty', name: 'Petal Apothecary', category: 'beauty', tagline: 'Clean, plant-powered skincare', whatsapp: '910000000000', upi: 'petal@upi', freeAbove: 799 }); }
   };
 
-  global.SahaayPresets = { PRESETS: PRESETS, buildStore: buildStore, DEMOS: DEMOS, uid: uid };
+  global.SahaayPresets = { PRESETS: PRESETS, buildStore: buildStore, DEMOS: DEMOS, uid: uid, firstSentence: firstSentence };
 })(typeof window !== 'undefined' ? window : this);
