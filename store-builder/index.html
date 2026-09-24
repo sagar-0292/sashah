@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#F7F1E6">
-<title>Sahaay Stores — Build your online shop in minutes, free</title>
-<meta name="description" content="Sahaay Stores helps small businesses set up a beautiful online store in minutes. Add products, pick a design, take orders on WhatsApp and payments by UPI or cash on delivery. Free, no coding, no monthly fee.">
-<meta property="og:title" content="Sahaay Stores — Your online shop in minutes">
-<meta property="og:description" content="Create a store, add products, take orders on WhatsApp. Free for small businesses.">
+<meta name="theme-color" content="#FBFAF8">
+<title>Sahaay Stores — Online store and mobile app for small businesses</title>
+<meta name="description" content="Create a beautiful online store and installable mobile app for your small business in minutes. Take orders on WhatsApp, get paid by UPI or cash on delivery. Free, no coding, 0% commission.">
+<meta property="og:title" content="Sahaay Stores — Your shop, online and on every phone">
+<meta property="og:description" content="A beautiful store and mobile app for your small business, in minutes. Free, 0% commission.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111110'/%3E%3Cpath d='M10 12h12l-1 11H11z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M13 12a3 3 0 0 1 6 0' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="storefront.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,90 +22,241 @@
 <div id="landing" hidden>
   <header class="lp-nav">
     <div class="lp-wrap lp-nav-in">
-      <a class="lp-logo" href="#/">🛍️ <span>Sahaay <em>Stores</em></span></a>
+      <a class="brand" href="#/"><span class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0" stroke-linecap="round"/></svg></span>Sahaay <span class="brand-soft">Stores</span></a>
       <nav class="lp-links">
         <a href="#features">Features</a>
-        <a href="#how">How it works</a>
+        <a href="#mobile">Mobile app</a>
+        <a href="#themes">Themes</a>
         <a href="#pricing">Pricing</a>
-        <a class="btn btn-sm" href="#/setup" data-start>Start free</a>
+        <a href="#faq">FAQ</a>
       </nav>
+      <div class="lp-nav-cta">
+        <a class="btn btn-quiet btn-sm lp-hide-sm" href="preview.html?demo=decor" target="_blank" rel="noopener">View demo</a>
+        <a class="btn btn-primary btn-sm" href="#/setup" data-start data-short>Start free</a>
+      </div>
     </div>
   </header>
 
   <section class="lp-hero">
-    <div class="lp-wrap lp-hero-grid">
-      <div>
-        <div class="lp-pill">For small businesses, home sellers and local shops</div>
-        <h1>Your online shop,<br><span class="accent">live in 10 minutes.</span></h1>
-        <p class="lp-lead">Add your products, pick a design, and start taking orders on WhatsApp with UPI or cash on delivery. No coding, no monthly fee, no commission on your sales.</p>
-        <div class="lp-cta">
-          <a class="btn btn-lg" href="#/setup" data-start>Create my store, free</a>
-          <a class="btn btn-lg btn-ghost" href="#how">See how it works</a>
-        </div>
-        <p class="lp-note">No signup needed. Your store is saved in this browser until you publish it.</p>
+    <div class="lp-wrap">
+      <a class="lp-badge" href="#mobile"><span>New</span>Every store is now an installable mobile app <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <h1 class="display">Your shop, online<br>and <em>on every phone.</em></h1>
+      <p class="lp-lead">Sahaay Stores gives small businesses a beautiful online store and a mobile app in minutes. Take orders on WhatsApp, get paid by UPI or cash on delivery, and keep 100% of every sale.</p>
+      <div class="lp-cta">
+        <a class="btn btn-primary btn-lg" href="#/setup" data-start>Create your store, free</a>
+        <a class="btn btn-secondary btn-lg" href="preview.html?demo=decor" target="_blank" rel="noopener">Explore a live demo</a>
       </div>
-      <div class="lp-mock" aria-hidden="true">
-        <div class="lp-mock-bar"><i></i><i></i><i></i><span>yourshop.com</span></div>
-        <div class="lp-mock-head">🧁 <b>Priya's Bakes</b><span class="lp-mock-cart">🛍️ 2</span></div>
-        <div class="lp-mock-hero"><b>Fresh from our oven</b><small>Eggless cakes & cookies, delivered in Pune</small></div>
-        <div class="lp-mock-grid">
-          <div><i style="background:linear-gradient(135deg,#F9D5DC,#F2B1BF)">🎂</i><b>Chocolate truffle</b><small>₹650</small></div>
-          <div><i style="background:linear-gradient(135deg,#FCE8C8,#F6CF8E)">🍪</i><b>Butter cookies</b><small>₹240</small></div>
-          <div><i style="background:linear-gradient(135deg,#D9EAD3,#B8D8A9)">🧁</i><b>Cupcake box</b><small>₹420</small></div>
-        </div>
-        <div class="lp-mock-wa">✓ New order from Rahul on WhatsApp · ₹1,070</div>
+      <ul class="lp-proof">
+        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5 9-10"/></svg>Free forever</li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5 9-10"/></svg>0% commission</li>
+        <li><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5 9-10"/></svg>No coding, no signup</li>
+      </ul>
+    </div>
+
+    <div class="lp-stage lp-wrap" aria-hidden="true">
+      <div class="mock-browser">
+        <div class="mock-bar"><i></i><i></i><i></i><span>emberandoak.store</span></div>
+        <div class="dev-view" data-w="1280" data-h="800" data-src="preview.html?demo=decor&embed=1"></div>
       </div>
+      <div class="mock-phone mock-phone-hero">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:41</span><span class="ps-icons"><svg viewBox="0 0 18 12" width="16" height="11"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 27 12" width="24" height="11"><rect x=".5" y=".5" width="23" height="11" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="1.8"/><rect x="24.5" y="4" width="2" height="4" rx="1" opacity=".4"/></svg></span></div>
+        <div class="dev-view" data-w="390" data-h="800" data-src="preview.html?demo=decor&app=1&embed=1"></div>
+      </div>
+      <div class="float-card float-order">
+        <span class="float-ic float-ic-wa"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/></svg></span>
+        <div><b>New order · ₹2,140</b><small>Stoneware vase × 2, linen cushion</small></div>
+      </div>
+      <div class="float-card float-pay">
+        <span class="float-ic float-ic-ok"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-10"/></svg></span>
+        <div><b>UPI payment received</b><small>Straight to your bank · no fees</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-strip">
+    <div class="lp-wrap lp-strip-in">
+      <span>Made for</span>
+      <ul><li>Home bakers</li><li>Boutiques</li><li>Makers & artisans</li><li>Beauty brands</li><li>Kirana & grocers</li><li>Gadget shops</li><li>Home decor</li></ul>
     </div>
   </section>
 
   <section class="lp-section" id="features">
     <div class="lp-wrap">
-      <h2>Everything a small shop needs, nothing it doesn't</h2>
-      <div class="lp-features">
-        <div class="lp-feature"><span>🎨</span><h3>Beautiful designs</h3><p>Three ready-made themes. Choose your colours, font, logo and banner. The editor shows changes live.</p></div>
-        <div class="lp-feature"><span>📦</span><h3>Products & stock</h3><p>Photos, prices, sale prices, categories and stock counts. Sold-out items are marked automatically.</p></div>
-        <div class="lp-feature"><span>💬</span><h3>Orders on WhatsApp</h3><p>Customers check out on your site and the full order arrives in your WhatsApp, with their address filled in.</p></div>
-        <div class="lp-feature"><span>💸</span><h3>UPI & cash on delivery</h3><p>Customers pay straight into your UPI ID with any UPI app. No payment gateway fees, no waiting for settlements.</p></div>
-        <div class="lp-feature"><span>📱</span><h3>Made for phones</h3><p>Your store looks great on every phone, and you can manage everything from yours.</p></div>
-        <div class="lp-feature"><span>🌐</span><h3>Host it anywhere</h3><p>Publish your store as a single file. Put it online free on Netlify or GitHub Pages, or on your own domain.</p></div>
+      <div class="lp-head">
+        <div class="eyebrow">Everything you need</div>
+        <h2 class="display">A complete store,<br>without the complexity.</h2>
+        <p>Every tool a small business needs to sell online, designed to be used from a phone in a few spare minutes.</p>
       </div>
-    </div>
-  </section>
-
-  <section class="lp-section lp-alt" id="how">
-    <div class="lp-wrap">
-      <h2>Three steps to your first sale</h2>
-      <ol class="lp-steps">
-        <li><b>1</b><h3>Set up your store</h3><p>Answer a few questions: your shop name, what you sell, your WhatsApp number and UPI ID. We'll set up a starter design for your type of business.</p></li>
-        <li><b>2</b><h3>Add your products</h3><p>Take photos with your phone and add prices. Start with our sample products if you'd like to see how it looks first.</p></li>
-        <li><b>3</b><h3>Publish & share</h3><p>Download your website and drop it on a free host. Share the link on WhatsApp, Instagram and your shop counter.</p></li>
-      </ol>
-      <div class="lp-center"><a class="btn btn-lg" href="#/setup" data-start>Start building</a></div>
-    </div>
-  </section>
-
-  <section class="lp-section" id="pricing">
-    <div class="lp-wrap">
-      <h2>Simple pricing</h2>
-      <div class="lp-price">
-        <div class="lp-price-card">
-          <div class="lp-price-name">Starter</div>
-          <div class="lp-price-amt">₹0 <small>forever</small></div>
-          <ul>
-            <li>Unlimited products</li>
-            <li>All themes & colours</li>
-            <li>WhatsApp orders, UPI & COD</li>
-            <li>0% commission on sales</li>
-            <li>Download & host anywhere</li>
-          </ul>
-          <a class="btn btn-block" href="#/setup" data-start>Create my store</a>
+      <div class="bento">
+        <div class="bento-card bento-wide">
+          <div class="bento-copy"><h3>Designs that look expensive</h3><p>Three professionally designed themes, five font pairings and your brand colours. Every change previews live on desktop, tablet and phone.</p></div>
+          <div class="bento-visual bento-themes">
+            <span style="--c:#1F1D1B">Editorial</span><span style="--c:#8A5A44">Classic</span><span style="--c:#2E4F7A">Bold</span>
+          </div>
+        </div>
+        <div class="bento-card">
+          <div class="bento-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/></svg></div>
+          <h3>Orders on WhatsApp</h3><p>Customers check out on your site and the full order — items, total and address — arrives in your WhatsApp, ready to confirm.</p>
+        </div>
+        <div class="bento-card">
+          <div class="bento-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>
+          <h3>UPI & cash on delivery</h3><p>Customers pay the exact amount into your UPI ID from any UPI app. No gateway fees and no waiting for settlements.</p>
+        </div>
+        <div class="bento-card">
+          <div class="bento-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
+          <h3>Products & stock</h3><p>Photos, sale prices, categories and stock levels. Items are marked sold out automatically.</p>
+        </div>
+        <div class="bento-card">
+          <div class="bento-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H5v14h14v-4"/><path d="M13 5h6v6M19 5l-9 9"/></svg></div>
+          <h3>Host it anywhere</h3><p>Publish in one click and put your store online free on Netlify or GitHub Pages — or on your own domain.</p>
+        </div>
+        <div class="bento-card bento-wide bento-dark">
+          <div class="bento-copy"><h3>An order dashboard you'll actually use</h3><p>Track every order from new to delivered, message customers in one tap, and follow a launch checklist that gets you to your first sale.</p></div>
+          <div class="bento-visual bento-orders">
+            <div><span class="dot dot-blue"></span><b>Ananya S.</b><em>₹2,140</em><i>New</i></div>
+            <div><span class="dot dot-amber"></span><b>Rahul M.</b><em>₹860</em><i>Shipped</i></div>
+            <div><span class="dot dot-green"></span><b>Farah K.</b><em>₹1,299</em><i>Delivered</i></div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <section class="lp-section lp-dark" id="mobile">
+    <div class="lp-wrap lp-mobile">
+      <div class="lp-mobile-copy">
+        <div class="eyebrow">Mobile views & apps</div>
+        <h2 class="display">Built for phones.<br><em>Installable as an app.</em></h2>
+        <p>Most of your customers will shop on their phone, so every store gets a true mobile experience: a thumb-friendly bottom bar, a sticky “Add to cart” button and full-screen product pages.</p>
+        <ul class="lp-ticks">
+          <li><b>Your own app icon</b> on customers' home screens, with your name and colours</li>
+          <li><b>Opens full screen</b> like a native app, and loads fast even on a slow connection</li>
+          <li><b>“Install app” banner</b> invites visitors to add your store with one tap</li>
+          <li><b>Ready for Google Play & the App Store</b> — package it with the free PWABuilder tool</li>
+        </ul>
+        <a class="btn btn-light btn-lg" href="#/setup" data-start>Build my store & app</a>
+      </div>
+      <div class="lp-phones" aria-hidden="true">
+        <div class="mock-phone mock-phone-sm homescreen">
+          <div class="phone-notch"></div>
+          <div class="hs">
+            <div class="hs-time">9:41</div>
+            <div class="hs-grid">
+              <span style="background:#E9E4DC">📷</span><span style="background:#DDE7F2">🗓️</span><span style="background:#E4EFE3">🗺️</span><span style="background:#F3E3E6">🎵</span>
+              <span style="background:#EFE9DD">☀️</span><span style="background:#E2E0F0">📝</span>
+              <span class="hs-app" style="background:#1F1D1B">🪴<em>Ember & Oak</em></span>
+              <span style="background:#E6EEE9">🧮</span>
+            </div>
+            <div class="hs-dock"><span style="background:#DCEBDD">📞</span><span style="background:#DDE6F3">💬</span><span style="background:#F1E4DA">🌐</span><span style="background:#ECE6F3">⚙️</span></div>
+          </div>
+        </div>
+        <div class="mock-phone mock-phone-md">
+          <div class="phone-notch"></div>
+          <div class="phone-status"><span>9:41</span><span class="ps-icons"><svg viewBox="0 0 18 12" width="16" height="11"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 27 12" width="24" height="11"><rect x=".5" y=".5" width="23" height="11" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="1.8"/><rect x="24.5" y="4" width="2" height="4" rx="1" opacity=".4"/></svg></span></div>
+          <div class="dev-view" data-w="390" data-h="800" data-src="preview.html?demo=bakery&install=1&embed=1"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section" id="themes">
+    <div class="lp-wrap">
+      <div class="lp-head">
+        <div class="eyebrow">Themes</div>
+        <h2 class="display">Pick a look. Make it yours.</h2>
+        <p>Start with a theme designed for your kind of business, then change colours, fonts, your logo and the banner — no designer needed.</p>
+      </div>
+      <div class="themes">
+        <a class="theme-card" href="preview.html?demo=decor" target="_blank" rel="noopener">
+          <div class="theme-shot"><div class="dev-view" data-w="1280" data-h="900" data-src="preview.html?demo=decor&embed=1"></div></div>
+          <div class="theme-meta"><b>Editorial</b><span>Ember & Oak · Home decor</span></div>
+        </a>
+        <a class="theme-card" href="preview.html?demo=bakery" target="_blank" rel="noopener">
+          <div class="theme-shot"><div class="dev-view" data-w="1280" data-h="900" data-src="preview.html?demo=bakery&embed=1"></div></div>
+          <div class="theme-meta"><b>Classic</b><span>Crumb & Co. · Bakery</span></div>
+        </a>
+        <a class="theme-card" href="preview.html?demo=tech" target="_blank" rel="noopener">
+          <div class="theme-shot"><div class="dev-view" data-w="1280" data-h="900" data-src="preview.html?demo=tech&embed=1"></div></div>
+          <div class="theme-meta"><b>Bold</b><span>Voltline · Electronics</span></div>
+        </a>
+      </div>
+      <p class="lp-note">These are fictional demo stores. Click any theme to try it.</p>
+    </div>
+  </section>
+
+  <section class="lp-section lp-soft" id="how">
+    <div class="lp-wrap">
+      <div class="lp-head">
+        <div class="eyebrow">How it works</div>
+        <h2 class="display">Live in an afternoon.</h2>
+      </div>
+      <ol class="steps">
+        <li><span>01</span><h3>Tell us about your shop</h3><p>Your name, what you sell, your WhatsApp number and UPI ID. We set up a starter design and sample products for your kind of business.</p></li>
+        <li><span>02</span><h3>Add products & style it</h3><p>Upload photos from your phone, set prices and stock, and tune the design with a live preview on every screen size.</p></li>
+        <li><span>03</span><h3>Publish & share</h3><p>Download your store and app, drop it on a free host, and share the link on WhatsApp, Instagram and at your counter.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="lp-section" id="pricing">
+    <div class="lp-wrap">
+      <div class="lp-head">
+        <div class="eyebrow">Pricing</div>
+        <h2 class="display">Free. Really.</h2>
+        <p>No monthly fee, no commission, no card required. Your only costs are optional: a custom domain or app-store developer accounts.</p>
+      </div>
+      <div class="price-card">
+        <div class="price-left">
+          <div class="price-name">Starter</div>
+          <div class="price-amt">₹0<small>/month</small></div>
+          <p>Everything you need to start selling online today.</p>
+          <a class="btn btn-primary btn-lg btn-block" href="#/setup" data-start>Create your store</a>
+        </div>
+        <ul class="price-list">
+          <li>Unlimited products and orders</li>
+          <li>All themes, fonts and colours</li>
+          <li>Mobile-optimised store</li>
+          <li>Installable mobile app (PWA)</li>
+          <li>WhatsApp orders, UPI & COD</li>
+          <li>Order dashboard & launch checklist</li>
+          <li>0% commission on your sales</li>
+          <li>Host anywhere, your own domain</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section lp-soft" id="faq">
+    <div class="lp-wrap lp-faq">
+      <div class="lp-head lp-head-left">
+        <div class="eyebrow">FAQ</div>
+        <h2 class="display">Questions, answered.</h2>
+      </div>
+      <div class="faq">
+        <details open><summary>Do I need to know coding or design?</summary><p>No. You answer a few questions, add your products and pick your colours. The themes are designed to look professional with whatever you add.</p></details>
+        <details><summary>How do I receive orders and payments?</summary><p>When a customer checks out, they send the complete order to your WhatsApp in one tap. They can pay the exact amount to your UPI ID from any UPI app, or choose cash on delivery. Money goes straight to your bank account.</p></details>
+        <details><summary>How does the mobile app work?</summary><p>Your store is a Progressive Web App. Customers on Android see an “Install” button; on iPhone they use Share → Add to Home Screen. It gets your icon and opens full screen. To list it on Google Play or the App Store, the free PWABuilder tool can package it. Google charges a one-time developer fee and Apple an annual one.</p></details>
+        <details><summary>Where is my store hosted?</summary><p>You publish your store as a small set of files and drop them on any static host — Netlify and GitHub Pages are free. You can connect your own domain there too.</p></details>
+        <details><summary>Where is my data stored?</summary><p>While you build, everything is saved privately in your browser. Download a backup any time to keep a copy or move to another device. Customer details are never included in your published site.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-final">
+    <div class="lp-wrap">
+      <h2 class="display">Open your shop <em>today.</em></h2>
+      <p>It takes about ten minutes. It's free, and it's yours.</p>
+      <a class="btn btn-light btn-lg" href="#/setup" data-start>Create your store, free</a>
+    </div>
+  </section>
+
   <footer class="lp-footer">
-    <div class="lp-wrap">🛍️ Sahaay Stores · Online shops for small businesses · <a href="#/setup" data-start>Get started</a></div>
+    <div class="lp-wrap lp-footer-in">
+      <a class="brand" href="#/"><span class="brand-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0" stroke-linecap="round"/></svg></span>Sahaay <span class="brand-soft">Stores</span></a>
+      <nav><a href="#features">Features</a><a href="#mobile">Mobile app</a><a href="#themes">Themes</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
+      <span class="lp-copy">Online stores for small businesses.</span>
+    </div>
   </footer>
 </div>
 
@@ -114,6 +266,7 @@
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="storefront.js"></script>
+<script src="presets.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
