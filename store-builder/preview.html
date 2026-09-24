@@ -7,7 +7,6 @@
 <title>Store preview · Sahaay Stores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="storefront.css">
 <style>
   html,body{margin:0;background:#fff;}
@@ -23,6 +22,7 @@
 <body>
 <div class="pv-bar" id="pv-bar"></div>
 <div id="sf-root"></div>
+<script src="sections.js"></script>
 <script src="storefront.js"></script>
 <script src="presets.js"></script>
 <script>
@@ -34,7 +34,9 @@
   var embedded = window.self !== window.top || q.get('embed') === '1';
   if (embedded) document.body.classList.add('embedded');
 
-  var opts = { mode: 'preview', standalone: q.get('app') === '1', forceInstall: q.get('install') === '1' };
+  var opts = { mode: 'preview', standalone: q.get('app') === '1', forceInstall: q.get('install') === '1', editor: q.get('edit') === '1' };
+  // Live editor: tell the builder which section was clicked.
+  opts.onSelect = function (id) { if (window.parent !== window) window.parent.postMessage({ type: 'sahaay-select', id: id }, location.origin); };
   var demo = q.get('demo');
   var draft = q.get('draft') === '1';
 
@@ -86,9 +88,10 @@
 
   // Live, unsaved edits from the design editor or the setup wizard.
   window.addEventListener('message', function (e) {
-    if (e.origin !== location.origin || !e.data || e.data.type !== 'sahaay-store') return;
-    store = e.data.store;
-    mount();
+    if (e.origin !== location.origin || !e.data) return;
+    if (e.data.type === 'sahaay-store') { store = e.data.store; mount(); }
+    if (e.data.type === 'sahaay-highlight' && sf) sf.highlight(e.data.id, e.data.scroll !== false);
+    if (e.data.type === 'sahaay-page' && sf) sf.showPage(e.data.id);
   });
   // Saved changes from another tab.
   if (!demo && !draft) {

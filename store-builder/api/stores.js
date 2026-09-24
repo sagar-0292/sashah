@@ -69,15 +69,18 @@ function sanitize(store) {
   const json = JSON.stringify(s);
   if (json.includes('"data:')) throw new HttpError(400, 'Images must be uploaded before saving.');
   if (Buffer.byteLength(json) > MAX_BYTES) throw new HttpError(413, 'Your store is too large to save. Try shorter descriptions.');
-  // Only allow image URLs we issued (https storage or dev uploads).
+  // Only allow image URLs we issued (https storage or dev uploads), wherever
+  // they appear: logo, app icons, product photos, and any section setting.
   const okUrl = (u) => !u || /^https:\/\//.test(u) || /^\/dev-uploads\//.test(u);
-  const check = (u) => { if (!okUrl(u)) throw new HttpError(400, 'Invalid image address.'); };
-  check(s.hero && s.hero.image);
-  check(s.owner && s.owner.photo);
-  check(s.app && s.app.icon);
-  if (s.app && s.app.icons) Object.values(s.app.icons).forEach(check);
-  if (typeof s.logo === 'string' && s.logo.length > 16) check(s.logo);
-  s.products.forEach((p) => { (p.images || []).forEach(check); });
+  const IMAGE_KEYS = new Set(['image', 'photo', '192', '512', '180', 'maskable']);
+  (function walk(o, key) {
+    if (Array.isArray(o)) { o.forEach((v) => walk(v, key === 'images' ? 'image' : null)); return; }
+    if (o && typeof o === 'object') { Object.keys(o).forEach((k) => walk(o[k], k)); return; }
+    if (typeof o === 'string' && key && IMAGE_KEYS.has(key) && !okUrl(o)) throw new HttpError(400, 'Invalid image address.');
+  })(s, null);
+  if (typeof s.logo === 'string' && s.logo.length > 16 && !okUrl(s.logo)) throw new HttpError(400, 'Invalid image address.');
+  if (s.app && s.app.icon && !okUrl(s.app.icon)) throw new HttpError(400, 'Invalid image address.');
+  if (s.theme && typeof s.theme.customCss === 'string') s.theme.customCss = s.theme.customCss.slice(0, 20000);
   return s;
 }
 

@@ -6,7 +6,7 @@
   // [title, price, compareAt, category, description, emoji]
   var PRESETS = {
     food: {
-      label: 'Food & bakery', emoji: '🧁', color: '#8A5A44', font: 'elegant', template: 'classic', layout: 'split',
+      label: 'Food & bakery', icon: 'food', emoji: '🧁', color: '#8A5A44', style: 'classic', layout: 'split',
       eyebrow: 'Baked fresh daily', hero: 'Freshly baked, delivered to your door', productsHeading: 'Today\'s menu',
       about: 'We bake everything in small batches with simple, honest ingredients — no preservatives, no shortcuts. Order a day ahead for custom celebration cakes.',
       samples: [
@@ -19,7 +19,7 @@
       ]
     },
     fashion: {
-      label: 'Clothing & fashion', emoji: '👗', color: '#1F1D1B', font: 'luxe', template: 'minimal', layout: 'split',
+      label: 'Clothing & fashion', icon: 'shirt', emoji: '👗', color: '#161513', style: 'editorial', layout: 'split',
       eyebrow: 'New season', hero: 'Considered clothing, made to last', productsHeading: 'New arrivals',
       about: 'Comfortable, well-made pieces designed for everyday life, in natural fabrics and small production runs. Free exchanges within 7 days.',
       samples: [
@@ -32,7 +32,7 @@
       ]
     },
     crafts: {
-      label: 'Handmade & crafts', emoji: '🧶', color: '#B4553B', font: 'friendly', template: 'classic', layout: 'split',
+      label: 'Handmade & crafts', icon: 'hand', emoji: '🧶', color: '#B4553B', style: 'soft', layout: 'split',
       eyebrow: 'Made by hand', hero: 'Handmade with love, one piece at a time', productsHeading: 'Shop handmade',
       about: 'Every piece is made by hand in our home studio, so no two are exactly alike. We use natural fibres and non-toxic finishes.',
       samples: [
@@ -45,7 +45,7 @@
       ]
     },
     beauty: {
-      label: 'Beauty & wellness', emoji: '🌸', color: '#C27C88', font: 'luxe', template: 'classic', layout: 'split',
+      label: 'Beauty & wellness', icon: 'sparkle', emoji: '🌸', color: '#B86A78', style: 'soft', layout: 'split',
       eyebrow: 'Clean skincare', hero: 'Gentle, clean care for every day', productsHeading: 'Bestsellers',
       about: 'Small-batch skincare made with plant-based ingredients. No harsh chemicals, never tested on animals, always kind to skin.',
       samples: [
@@ -58,7 +58,7 @@
       ]
     },
     home: {
-      label: 'Home & decor', emoji: '🪴', color: '#1F1D1B', font: 'luxe', template: 'minimal', layout: 'split',
+      label: 'Home & decor', icon: 'lamp', emoji: '🪴', color: '#161513', style: 'editorial', layout: 'split',
       eyebrow: 'The home edit', hero: 'Objects for a calmer, more beautiful home', productsHeading: 'Shop the collection',
       about: 'Thoughtfully sourced decor and everyday objects, made by independent makers across India.',
       samples: [
@@ -71,7 +71,7 @@
       ]
     },
     electronics: {
-      label: 'Electronics', emoji: '🎧', color: '#2E4F7A', font: 'geometric', template: 'bold', layout: 'split',
+      label: 'Electronics', icon: 'bolt', emoji: '🎧', color: '#2E4F7A', style: 'bold', layout: 'split',
       eyebrow: 'Genuine · Warranty', hero: 'Gadgets that just work', productsHeading: 'Top picks',
       about: 'Genuine products with a bill and full warranty. Same-day delivery across the city, and real support when you need it.',
       samples: [
@@ -84,7 +84,7 @@
       ]
     },
     grocery: {
-      label: 'Grocery & daily needs', emoji: '🛒', color: '#2F6B4F', font: 'geometric', template: 'classic', layout: 'split',
+      label: 'Grocery & daily needs', icon: 'basket', emoji: '🛒', color: '#2F6B4F', style: 'modern', layout: 'split',
       eyebrow: 'Delivered today', hero: 'Everyday essentials, delivered fast', productsHeading: 'Shop essentials',
       about: 'Your neighbourhood store, now online. Order before 6 pm for same-day delivery.',
       samples: [
@@ -97,7 +97,7 @@
       ]
     },
     other: {
-      label: 'Something else', emoji: '🛍️', color: '#6B4FA0', font: 'modern', template: 'classic', layout: 'split',
+      label: 'Something else', icon: 'store', emoji: '🛍️', color: '#111318', style: 'modern', layout: 'split',
       eyebrow: 'Welcome', hero: 'Quality products, friendly service', productsHeading: 'Our products',
       about: 'Tell your customers who you are, what you make and why they will love it.',
       samples: [
@@ -123,42 +123,59 @@
   /* Build a complete store object from a business type plus the owner's
    * answers. `o.copy` (optional) is AI-written homepage text from
    * /api/generate; without it we fall back to the preset's copy and the
-   * owner's own words. */
+   * owner's own words. The result uses the section model in sections.js. */
   function buildStore(o) {
+    var SS = global.SahaaySections;
     var p = PRESETS[o.category] || PRESETS.other;
     var c = o.copy || {};
     var name = (o.name || '').trim() || 'My Store';
     var description = (o.description || '').trim();
     var tagline = (c.tagline || o.tagline || firstSentence(description, 90) || '').trim();
+    var styleKey = o.style || { classic: 'classic', minimal: 'editorial', bold: 'bold' }[o.template] || p.style;
+    var theme = SS.applyStyle({}, styleKey);
+    theme.primary = o.primary || p.color;
+    if (o.headingFont && SS.FONTS[o.headingFont]) theme.fonts.heading = o.headingFont;
+    theme.card = { ratio: '4/5', align: styleKey === 'editorial' || styleKey === 'midnight' ? 'center' : 'left', quickAdd: true, showCategory: true };
+    theme.mobile = { bottomNav: true, stickyBuy: true, columns: 2 };
+    theme.customCss = '';
+    theme.buttonCase = theme.headingCase === 'uppercase' ? 'uppercase' : 'none';
+
+    var logoImg = o.logoImage || (/^(data:|https?:|\/)/.test(String(o.logo || '')) ? o.logo : '');
+    var ownerBio = (c.ownerBio || o.ownerBio || '').trim();
+    var home = [
+      SS.newSection('hero', { layout: o.layout || p.layout, eyebrow: c.eyebrow || p.eyebrow, heading: c.heroHeading || p.hero, text: c.heroSubheading || tagline, button1Label: 'Shop now', button1Link: 'products', scheme: 'alt' }),
+      SS.newSection('features'),
+      SS.newSection('products', { eyebrow: '', heading: c.productsHeading || p.productsHeading })
+    ];
+    var story = SS.newSection('richText', { eyebrow: 'Our story', heading: '', text: c.about || description || p.about });
+    home.push(story);
+    if (ownerBio || o.ownerName) home.push(SS.newSection('owner', { name: (o.ownerName || '').trim(), bio: ownerBio, photo: o.ownerPhoto || '' }));
+    if (String(o.whatsapp || '').replace(/\D/g, '')) home.push(SS.newSection('cta'));
+
     return {
+      schema: 3,
       id: o.id || uid('s'),
       createdAt: new Date().toISOString(),
       name: name,
       tagline: tagline,
       description: description,
       category: o.category || 'other',
-      logo: o.logo || p.emoji,
+      logo: logoImg,
+      brand: { type: logoImg ? 'image' : 'wordmark', text: name, mark: o.mark || 'none', size: 'md' },
       currency: o.currency || 'INR',
-      theme: {
-        template: o.template || p.template,
-        primary: o.primary || p.color,
-        font: o.font || p.font,
-        mobile: { bottomNav: true, stickyBuy: true, columns: 2 }
-      },
-      hero: {
-        layout: o.layout || p.layout, eyebrow: c.eyebrow || p.eyebrow, heading: c.heroHeading || p.hero,
-        subheading: c.heroSubheading || tagline, cta: 'Shop now', image: ''
-      },
-      productsHeading: c.productsHeading || p.productsHeading,
+      theme: theme,
+      header: { layout: styleKey === 'editorial' || styleKey === 'midnight' ? 'center' : 'left', sticky: true, showSearch: true, autoCategories: true,
+        menu: [{ label: 'Shop all', link: 'products' }, { label: 'Our story', link: 'section:' + story.id }] },
+      footer: { text: tagline, showPowered: true, social: { instagram: '', facebook: '', youtube: '' } },
       announcement: o.announcement || '',
-      about: c.about || description || p.about,
-      owner: { name: (o.ownerName || '').trim(), bio: (c.ownerBio || o.ownerBio || '').trim(), photo: o.ownerPhoto || '' },
+      pages: [{ id: 'home', title: 'Home', slug: '', sections: home }],
+      owner: { name: (o.ownerName || '').trim(), bio: ownerBio, photo: '' },   // legacy mirror; the owner section holds the photo
       contact: { whatsapp: String(o.whatsapp || '').replace(/\D/g, ''), phone: '', email: (o.email || '').trim(), instagram: '', address: '' },
       payments: { upi: (o.upi || '').trim(), cod: o.cod !== false },
       shipping: { flat: o.flat || 0, freeAbove: o.freeAbove || 0 },
-      app: { enabled: o.app !== false, name: name, shortName: name.slice(0, 12), bg: o.primary || p.color, icon: '', banner: true },
+      app: { enabled: o.app !== false, name: name, shortName: name.slice(0, 12), bg: theme.primary, icon: '', banner: true },
       products: o.samples === false ? [] : p.samples.map(function (x, i) {
-        return { id: 'p' + i + uid(), title: x[0], price: x[1], compareAt: x[2], category: x[3], description: x[4], emoji: x[5], stock: i === 2 ? 4 : null, images: [], active: true, sample: true };
+        return { id: 'p' + i + uid(), title: x[0], price: x[1], compareAt: x[2], category: x[3], description: x[4], stock: i === 2 ? 4 : null, images: [], active: true, sample: true };
       }),
       orders: [],
       flags: {}
@@ -167,8 +184,8 @@
 
   var DEMOS = {
     decor: function () { return buildStore({ id: 'demo-decor', name: 'Ember & Oak', category: 'home', ownerName: 'Meera Iyer', ownerBio: 'I spent ten years sourcing for design studios before starting Ember & Oak from my living room. Every piece here comes from a maker I have met in person.', tagline: 'Handcrafted homeware from independent Indian makers', announcement: 'Free shipping on orders over ₹2,000', freeAbove: 2000, whatsapp: '910000000000', upi: 'emberandoak@upi' }); },
-    bakery: function () { return buildStore({ id: 'demo-bakery', name: 'Crumb & Co.', category: 'food', ownerName: 'Rohan Deshpande', ownerBio: 'I started baking for friends during college and never stopped. Everything is made in small batches in my home kitchen in Pune.', tagline: 'Small-batch bakes, delivered warm across Pune', flat: 40, freeAbove: 499, whatsapp: '910000000000', upi: 'crumbco@upi' }); },
-    tech: function () { return buildStore({ id: 'demo-tech', name: 'Voltline', category: 'electronics', tagline: 'Genuine gadgets with same-day delivery', announcement: 'Same-day delivery in Bengaluru', whatsapp: '910000000000', upi: 'voltline@upi' }); },
+    bakery: function () { return buildStore({ id: 'demo-bakery', name: 'Crumb & Co.', category: 'food', mark: 'circle', ownerName: 'Rohan Deshpande', ownerBio: 'I started baking for friends during college and never stopped. Everything is made in small batches in my home kitchen in Pune.', tagline: 'Small-batch bakes, delivered warm across Pune', flat: 40, freeAbove: 499, whatsapp: '910000000000', upi: 'crumbco@upi' }); },
+    tech: function () { return buildStore({ id: 'demo-tech', name: 'Voltline', category: 'electronics', mark: 'square', tagline: 'Genuine gadgets with same-day delivery', announcement: 'Same-day delivery in Bengaluru', whatsapp: '910000000000', upi: 'voltline@upi' }); },
     beauty: function () { return buildStore({ id: 'demo-beauty', name: 'Petal Apothecary', category: 'beauty', tagline: 'Clean, plant-powered skincare', whatsapp: '910000000000', upi: 'petal@upi', freeAbove: 799 }); }
   };
 

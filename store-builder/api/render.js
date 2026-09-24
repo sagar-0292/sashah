@@ -4,14 +4,6 @@
 // and the PWA manifest + service worker when the store's app is enabled.
 import { data, esc, isValidSlug, handleError } from './_lib.js';
 
-const FONT_LINKS = {
-  modern: 'family=Inter:wght@400;500;600;700',
-  geometric: 'family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800',
-  elegant: 'family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700',
-  luxe: 'family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700',
-  friendly: 'family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800',
-};
-
 export default async function handler(req, res) {
   try {
     const slug = String(req.query.slug || '');
@@ -25,11 +17,13 @@ export default async function handler(req, res) {
     const base = `/s/${slug}/`;
     const title = s.name + (s.tagline ? ' — ' + s.tagline : '');
     const desc = s.tagline || String(s.about || '').slice(0, 160) || `Shop online at ${s.name}`;
-    const ogImage = (s.hero && s.hero.image) || ((s.products || []).find((p) => p.images && p.images[0]) || {}).images?.[0] || '';
+    const heroSec = ((s.pages || [])[0] || { sections: [] }).sections.find((x) => x.type === 'hero') || {};
+    const ogImage = (heroSec.settings && heroSec.settings.image) || ((s.products || []).find((p) => p.images && p.images[0]) || {}).images?.[0] || '';
     const isImg = (u) => typeof u === 'string' && /^(https:|\/dev-uploads\/)/.test(u);
+    const initials = (n) => String(n || '?').trim().split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || 'S';
     const appOn = s.app && s.app.enabled && s.app.icons && s.app.icons['192'];
-    const favicon = appOn ? s.app.icons['192'] : isImg(s.logo) ? s.logo
-      : 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${s.logo || '🛍️'}</text></svg>`);
+    const favicon = appOn ? s.app.icons['192'] : (s.brand && s.brand.type === 'image' && isImg(s.logo)) ? s.logo
+      : 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${esc((s.theme || {}).primary || '#111')}"/><text x="32" y="42" font-family="Georgia,serif" font-size="26" text-anchor="middle" fill="#fff">${esc(initials((s.brand && s.brand.text) || s.name))}</text></svg>`);
     // Escape so the JSON can't close the <script> tag or break on line separators.
     const json = JSON.stringify(s).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
@@ -52,12 +46,12 @@ ${appOn ? `<link rel="manifest" href="${base}manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="${esc(s.app.shortName || s.name)}">
 ` : ''}<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?${FONT_LINKS[(s.theme || {}).font] || FONT_LINKS.modern}&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/storefront.css">
 <style>html,body{margin:0;background:#fff;}</style>
 </head>
 <body>
 <div id="sf-root"><noscript>${esc(s.name)} needs JavaScript turned on to show products.</noscript></div>
+<script src="/sections.js"></script>
 <script src="/storefront.js"></script>
 <script>
 var STORE = ${json};

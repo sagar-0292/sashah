@@ -13,8 +13,8 @@ Frontend: plain HTML/CSS/JS with no build step. Backend: Vercel functions with F
 | **Home** | Sales stats, a 9-step launch checklist, recent orders, a live store preview and the app status |
 | **Orders** | Status tabs with counts, expandable order details, status changes, and one-tap WhatsApp or call to the customer |
 | **Products** | Search and status tabs. Up to 4 photos each (compressed in the browser), compare-at price with an automatic discount %, stock with "Only N left" and "Sold out", categories, hide, duplicate |
-| **Online store (design)** | Classic, Editorial and Bold themes, 8 brand colours or a custom one, 5 font pairings, emoji or uploaded logo, split or centred banner, announcement bar and about text. **Desktop / tablet / phone preview** in real device frames |
-| **Mobile views** | Settings for the store on phones: app-style bottom navigation bar, sticky "Add to cart" bar, 1 or 2 products per row |
+| **Online store (visual editor)** | **Customise everything.** Six designer style presets (Editorial, Classic, Modern, Bold, Soft, Midnight). Every colour, heading and body font, weight, case, corner radius, button shape, spacing and product-card style can be changed. Owners can add, reorder, hide, duplicate and delete **12 section types**: banner, highlights, products, image with text, text, meet the owner, customer reviews, gallery, FAQ, video, call to action and contact. Every field in them is editable. There are custom **pages** (with About, Contact, Shipping, Privacy and Terms templates), an editable **menu**, logo (text logo with monogram, or image), announcement and footer, plus **custom CSS**. **Click anything in the preview to edit it.** Includes undo/redo and a desktop, tablet and phone preview |
+| **Mobile views** | Settings for phones: app-style bottom navigation bar, sticky "Add to cart" bar, 1 or 2 products per row, and a slide-out menu |
 | **Mobile app** | Turns the store into an installable PWA: app name, short name, icon (built from your logo or uploaded), launch-screen colour, and a "Get the app" install banner. Previews the home screen, launch screen and the app itself. Explains how to package it for Google Play and the App Store with PWABuilder |
 | **Share / Publish** | Hosted: the live link with copy and WhatsApp share (changes publish automatically). Download mode: a ZIP with the site, manifest, service worker and icons. Both modes have JSON backup |
 
@@ -44,6 +44,7 @@ store-builder/
 ├── index.html · style.css · app.js   ← landing page + builder (wizard, dashboard)
 ├── cloud.js · config.js              ← sign-in and API client; Firebase web config
 ├── storefront.js · storefront.css    ← the customer-facing store (shared by preview, hosting and export)
+├── sections.js                       ← the design system: fonts, style presets, section types & their fields, upgrades
 ├── presets.js                        ← business-type presets, store factory, demo stores
 ├── preview.html                      ← previews (own store, drafts, demos, app mode)
 ├── store-sw.js                       ← offline/app service worker for hosted stores
