@@ -43,6 +43,10 @@ jobs:
         run: pnpm lint && pnpm typecheck
       - name: Unit tests
         run: pnpm test:unit
+      - name: Kit tests
+        run: pnpm test:kits
+      - name: Published kits match their source
+        run: pnpm kits:check
       - name: Database security tests
         run: pnpm test:db
       - name: Install browser
